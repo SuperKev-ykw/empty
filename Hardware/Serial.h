@@ -1,10 +1,10 @@
-﻿/**
+/**
  * @file    Serial.h
  * @brief   串口通信驱动头文件
  * @details 提供串口初始化和收发功能（基于 MSPM0 SysConfig 配置）
  * 
  * 硬件配置（SysConfig 已配置）：
- *   UART0：PA10(TX), PA11(RX), 115200-8N1
+ *   UART1：PA8(TX), PA9(RX), 115200-8N1
  * 
  * 使用方式：
  *   1. SysConfig 已初始化串口外设

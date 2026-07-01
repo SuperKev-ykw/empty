@@ -1,4 +1,4 @@
-﻿#ifndef __OLED_H
+#ifndef __OLED_H
 #define __OLED_H
 
 #include "ti_msp_dl_config.h"

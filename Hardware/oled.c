@@ -1,4 +1,4 @@
-﻿#include "oled.h"
+#include "oled.h"
 #include "stdlib.h"
 #include "stdio.h"
 #include <stdarg.h>

@@ -9,7 +9,7 @@
  *   - 接收采用环形缓冲区 + 中断方式
  * 
  * 硬件配置（SysConfig）：
- *   UART0：PA10(TX), PA11(RX), 115200-8N1
+ *   UART1：PA8(TX), PA9(RX), 115200-8N1
  */
 
 #include "ti_msp_dl_config.h"
@@ -81,8 +81,8 @@ static uint16_t RingBuffer_GetCount(RingBuffer *rb)
  */
 void Serial_Init(void)
 {
-    NVIC_ClearPendingIRQ(UART_0_INST_INT_IRQN);
-    NVIC_EnableIRQ(UART_0_INST_INT_IRQN);
+    NVIC_ClearPendingIRQ(UART_1_INST_INT_IRQN);
+    NVIC_EnableIRQ(UART_1_INST_INT_IRQN);
 }
 
 /**
@@ -90,7 +90,7 @@ void Serial_Init(void)
  */
 void Serial_SendByte(uint8_t Byte)
 {
-    DL_UART_transmitData(UART_0_INST, Byte);
+    DL_UART_transmitData(UART_1_INST, Byte);
 }
 
 /**
@@ -170,14 +170,14 @@ uint8_t Serial_GetRxData(void)
 /* ==================== 中断服务函数 ==================== */
 
 /**
- * @brief  UART0 接收中断服务函数
- * @note   SysConfig 生成的宏 UART_0_INST_IRQHandler 展开为 UART0_IRQHandler
+ * @brief  UART1 接收中断服务函数
+ * @note   SysConfig 生成的宏 UART_1_INST_IRQHandler 展开为 UART1_IRQHandler
  *         当接收到数据时，将数据写入环形缓冲区
  */
-void UART_0_INST_IRQHandler(void)
+void UART_1_INST_IRQHandler(void)
 {
     /* 读取接收到的数据（读取操作自动清除中断标志） */
-    uint8_t received = DL_UART_receiveData(UART_0_INST);
+    uint8_t received = DL_UART_receiveData(UART_1_INST);
 
     /* 写入环形缓冲区 */
     RingBuffer_Write(&rxBuffer, received);

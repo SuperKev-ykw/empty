@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Timer.c
  * @brief   定时器驱动实现文件
  * @details 实现定时器中断计数功能

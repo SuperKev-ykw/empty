@@ -48,5 +48,15 @@
       "directory" : "D:/STUDY/MSPM0G3507/Myworkspace/empty/Debug",
       "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/System\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
       "file"      : "D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Serial.c"
+   },
+   {
+      "directory" : "D:/STUDY/MSPM0G3507/Myworkspace/empty/Debug",
+      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/System\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
+      "file"      : "D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/BlueSerial.c"
+   },
+   {
+      "directory" : "D:/STUDY/MSPM0G3507/Myworkspace/empty/Debug",
+      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/System\" -I\"D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/TI/CCS/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
+      "file"      : "D:/STUDY/MSPM0G3507/Myworkspace/empty/Test/BlueSerial_Test.c"
    }
 ]
