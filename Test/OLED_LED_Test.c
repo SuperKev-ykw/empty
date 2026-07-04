@@ -28,23 +28,5 @@
 //         DL_GPIO_clearPins(LED_PORT, LED_LED0_PIN);
 //         delay_ms(50);
 //         DL_GPIO_setPins(LED_PORT, LED_LED0_PIN);
-
-//         // if (Key_GetNum(1) == 1) { /* Key1 被按下 */
-//         //     OLED_Printf(0, 32, 16, "Key1 Pressed");
-//         //     OLED_Refresh();
-//         // }
-//         // if (Key_GetNum(2) == 1) { /* Key2 被按下 */
-//         //     OLED_Printf(0, 32, 16, "Key2 Pressed");
-//         //     OLED_Refresh();
-//         // }
-//         // if (Key_GetNum(3) == 1) { /* Key3 被按下 */
-//         //     OLED_Printf(0, 32, 16, "Key3 Pressed");
-//         //     OLED_Refresh();
-//         // }
-//         // if (Key_GetNum(4) == 1) { /* Key4 被按下 */
-//         //     OLED_Printf(0, 32, 16, "Key4 Pressed");
-//         //     OLED_Refresh();
-//         // }
-
 //     }
 // }

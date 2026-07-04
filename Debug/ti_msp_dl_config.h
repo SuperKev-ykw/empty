@@ -112,6 +112,20 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define GPIO_OLED_IOMUX_SCL                                       (IOMUX_PINCM2)
 #define GPIO_OLED_IOMUX_SCL_FUNC                        IOMUX_PINCM2_PF_I2C0_SCL
 
+/* Defines for GY_87 */
+#define GY_87_INST                                                          I2C1
+#define GY_87_INST_IRQHandler                                    I2C1_IRQHandler
+#define GY_87_INST_INT_IRQN                                        I2C1_INT_IRQn
+#define GY_87_BUS_SPEED_HZ                                                400000
+#define GPIO_GY_87_SDA_PORT                                                GPIOB
+#define GPIO_GY_87_SDA_PIN                                         DL_GPIO_PIN_3
+#define GPIO_GY_87_IOMUX_SDA                                     (IOMUX_PINCM16)
+#define GPIO_GY_87_IOMUX_SDA_FUNC                      IOMUX_PINCM16_PF_I2C1_SDA
+#define GPIO_GY_87_SCL_PORT                                                GPIOB
+#define GPIO_GY_87_SCL_PIN                                         DL_GPIO_PIN_2
+#define GPIO_GY_87_IOMUX_SCL                                     (IOMUX_PINCM15)
+#define GPIO_GY_87_IOMUX_SCL_FUNC                      IOMUX_PINCM15_PF_I2C1_SCL
+
 
 /* Defines for UART_0 */
 #define UART_0_INST                                                        UART0
@@ -171,6 +185,33 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for Key4: GPIOA.17 with pinCMx 39 on package pin 10 */
 #define Keys_Key4_PIN                                           (DL_GPIO_PIN_17)
 #define Keys_Key4_IOMUX                                          (IOMUX_PINCM39)
+/* Port definition for Pin Group Gray */
+#define Gray_PORT                                                        (GPIOB)
+
+/* Defines for Gray_1: GPIOB.6 with pinCMx 23 on package pin 58 */
+#define Gray_Gray_1_PIN                                          (DL_GPIO_PIN_6)
+#define Gray_Gray_1_IOMUX                                        (IOMUX_PINCM23)
+/* Defines for Gray_2: GPIOB.7 with pinCMx 24 on package pin 59 */
+#define Gray_Gray_2_PIN                                          (DL_GPIO_PIN_7)
+#define Gray_Gray_2_IOMUX                                        (IOMUX_PINCM24)
+/* Defines for Gray_3: GPIOB.8 with pinCMx 25 on package pin 60 */
+#define Gray_Gray_3_PIN                                          (DL_GPIO_PIN_8)
+#define Gray_Gray_3_IOMUX                                        (IOMUX_PINCM25)
+/* Defines for Gray_4: GPIOB.9 with pinCMx 26 on package pin 61 */
+#define Gray_Gray_4_PIN                                          (DL_GPIO_PIN_9)
+#define Gray_Gray_4_IOMUX                                        (IOMUX_PINCM26)
+/* Defines for Gray_5: GPIOB.10 with pinCMx 27 on package pin 62 */
+#define Gray_Gray_5_PIN                                         (DL_GPIO_PIN_10)
+#define Gray_Gray_5_IOMUX                                        (IOMUX_PINCM27)
+/* Defines for Gray_6: GPIOB.11 with pinCMx 28 on package pin 63 */
+#define Gray_Gray_6_PIN                                         (DL_GPIO_PIN_11)
+#define Gray_Gray_6_IOMUX                                        (IOMUX_PINCM28)
+/* Defines for Gray_7: GPIOB.12 with pinCMx 29 on package pin 64 */
+#define Gray_Gray_7_PIN                                         (DL_GPIO_PIN_12)
+#define Gray_Gray_7_IOMUX                                        (IOMUX_PINCM29)
+/* Defines for Gray_8: GPIOB.18 with pinCMx 44 on package pin 15 */
+#define Gray_Gray_8_PIN                                         (DL_GPIO_PIN_18)
+#define Gray_Gray_8_IOMUX                                        (IOMUX_PINCM44)
 
 
 /* clang-format on */
@@ -183,6 +224,7 @@ void SYSCFG_DL_SYSCTL_init(void);
 bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 void SYSCFG_DL_TIMER_0_init(void);
 void SYSCFG_DL_OLED_init(void);
+void SYSCFG_DL_GY_87_init(void);
 void SYSCFG_DL_UART_0_init(void);
 void SYSCFG_DL_UART_1_init(void);
 

@@ -52,6 +52,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_init(void)
     SYSCFG_DL_SYSCTL_init();
     SYSCFG_DL_TIMER_0_init();
     SYSCFG_DL_OLED_init();
+    SYSCFG_DL_GY_87_init();
     SYSCFG_DL_UART_0_init();
     SYSCFG_DL_UART_1_init();
 }
@@ -64,6 +65,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
     DL_GPIO_reset(GPIOB);
     DL_TimerG_reset(TIMER_0_INST);
     DL_I2C_reset(OLED_INST);
+    DL_I2C_reset(GY_87_INST);
     DL_UART_Main_reset(UART_0_INST);
     DL_UART_Main_reset(UART_1_INST);
 
@@ -71,6 +73,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
     DL_GPIO_enablePower(GPIOB);
     DL_TimerG_enablePower(TIMER_0_INST);
     DL_I2C_enablePower(OLED_INST);
+    DL_I2C_enablePower(GY_87_INST);
     DL_UART_Main_enablePower(UART_0_INST);
     DL_UART_Main_enablePower(UART_1_INST);
     delay_cycles(POWER_STARTUP_DELAY);
@@ -92,6 +95,16 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
         DL_GPIO_WAKEUP_DISABLE);
     DL_GPIO_enableHiZ(GPIO_OLED_IOMUX_SDA);
     DL_GPIO_enableHiZ(GPIO_OLED_IOMUX_SCL);
+    DL_GPIO_initPeripheralInputFunctionFeatures(GPIO_GY_87_IOMUX_SDA,
+        GPIO_GY_87_IOMUX_SDA_FUNC, DL_GPIO_INVERSION_DISABLE,
+        DL_GPIO_RESISTOR_NONE, DL_GPIO_HYSTERESIS_DISABLE,
+        DL_GPIO_WAKEUP_DISABLE);
+    DL_GPIO_initPeripheralInputFunctionFeatures(GPIO_GY_87_IOMUX_SCL,
+        GPIO_GY_87_IOMUX_SCL_FUNC, DL_GPIO_INVERSION_DISABLE,
+        DL_GPIO_RESISTOR_NONE, DL_GPIO_HYSTERESIS_DISABLE,
+        DL_GPIO_WAKEUP_DISABLE);
+    DL_GPIO_enableHiZ(GPIO_GY_87_IOMUX_SDA);
+    DL_GPIO_enableHiZ(GPIO_GY_87_IOMUX_SCL);
 
     DL_GPIO_initPeripheralOutputFunction(
         GPIO_UART_0_IOMUX_TX, GPIO_UART_0_IOMUX_TX_FUNC);
@@ -120,8 +133,40 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
 		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
 
-    DL_GPIO_clearPins(LED_PORT, LED_LED0_PIN);
-    DL_GPIO_enableOutput(LED_PORT, LED_LED0_PIN);
+    DL_GPIO_initDigitalInputFeatures(Gray_Gray_1_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_initDigitalInputFeatures(Gray_Gray_2_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_initDigitalInputFeatures(Gray_Gray_3_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_initDigitalInputFeatures(Gray_Gray_4_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_initDigitalInputFeatures(Gray_Gray_5_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_initDigitalInputFeatures(Gray_Gray_6_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_initDigitalInputFeatures(Gray_Gray_7_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_initDigitalInputFeatures(Gray_Gray_8_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_clearPins(GPIOB, LED_LED0_PIN);
+    DL_GPIO_enableOutput(GPIOB, LED_LED0_PIN);
 
 }
 
@@ -303,6 +348,33 @@ SYSCONFIG_WEAK void SYSCFG_DL_OLED_init(void) {
 
     /* Enable module */
     DL_I2C_enableController(OLED_INST);
+
+
+}
+static const DL_I2C_ClockConfig gGY_87ClockConfig = {
+    .clockSel = DL_I2C_CLOCK_BUSCLK,
+    .divideRatio = DL_I2C_CLOCK_DIVIDE_1,
+};
+
+SYSCONFIG_WEAK void SYSCFG_DL_GY_87_init(void) {
+
+    DL_I2C_setClockConfig(GY_87_INST,
+        (DL_I2C_ClockConfig *) &gGY_87ClockConfig);
+    DL_I2C_setAnalogGlitchFilterPulseWidth(GY_87_INST,
+        DL_I2C_ANALOG_GLITCH_FILTER_WIDTH_50NS);
+    DL_I2C_enableAnalogGlitchFilter(GY_87_INST);
+
+    /* Configure Controller Mode */
+    DL_I2C_resetControllerTransfer(GY_87_INST);
+    /* Set frequency to 400000 Hz*/
+    DL_I2C_setTimerPeriod(GY_87_INST, 9);
+    DL_I2C_setControllerTXFIFOThreshold(GY_87_INST, DL_I2C_TX_FIFO_LEVEL_EMPTY);
+    DL_I2C_setControllerRXFIFOThreshold(GY_87_INST, DL_I2C_RX_FIFO_LEVEL_BYTES_1);
+    DL_I2C_enableControllerClockStretching(GY_87_INST);
+
+
+    /* Enable module */
+    DL_I2C_enableController(GY_87_INST);
 
 
 }

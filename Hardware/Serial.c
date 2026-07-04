@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    Serial.c
  * @brief   串口通信驱动实现文件
  * @details 基于 MSPM0G3507 + SysConfig 配置的 UART 驱动
@@ -90,6 +90,7 @@ void Serial_Init(void)
  */
 void Serial_SendByte(uint8_t Byte)
 {
+    while (DL_UART_isTXFIFOFull(UART_1_INST));
     DL_UART_transmitData(UART_1_INST, Byte);
 }
 

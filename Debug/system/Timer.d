@@ -84,7 +84,7 @@ system/Timer.o: ../system/Timer.c \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h \
- ../system/Timer.h D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Key.h
+ ../system/Timer.h D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/key.h
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h:
@@ -169,4 +169,4 @@ C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
 ../system/Timer.h:
-D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Key.h:
+D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/key.h:

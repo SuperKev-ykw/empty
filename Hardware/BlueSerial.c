@@ -1,7 +1,7 @@
 /**
  * @file    BlueSerial.c
  * @brief   蓝牙串口驱动实现文件（UART0）
- * @details 参考工程风格，中断直接接收字符串
+ * @details 使用环形缓冲区接收原始字节，供主循环解析
  *
  * 硬件配置（SysConfig）：
  *   UART0：PA10(TX), PA11(RX), 115200-8N1
@@ -12,10 +12,43 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-/* ==================== 全局变量 ==================== */
+/* ==================== 环形缓冲区 ==================== */
 
-char BlueSerial_RxPacket[100];
-volatile uint8_t BlueSerial_RxFlag = 0;
+#define RX_BUFFER_SIZE 256
+
+typedef struct {
+    uint8_t buffer[RX_BUFFER_SIZE];
+    volatile uint16_t head;
+    volatile uint16_t tail;
+    volatile uint16_t count;
+} RingBuffer;
+
+static RingBuffer rxBuffer = { .head = 0, .tail = 0, .count = 0 };
+
+static void RingBuffer_Write(RingBuffer *rb, uint8_t data)
+{
+    if (rb->count < RX_BUFFER_SIZE) {
+        rb->buffer[rb->head] = data;
+        rb->head = (rb->head + 1) % RX_BUFFER_SIZE;
+        rb->count++;
+    }
+}
+
+static uint8_t RingBuffer_Read(RingBuffer *rb)
+{
+    if (rb->count > 0) {
+        uint8_t data = rb->buffer[rb->tail];
+        rb->tail = (rb->tail + 1) % RX_BUFFER_SIZE;
+        rb->count--;
+        return data;
+    }
+    return 0;
+}
+
+static uint16_t RingBuffer_GetCount(RingBuffer *rb)
+{
+    return rb->count;
+}
 
 /* ==================== 串口 API ==================== */
 
@@ -27,6 +60,7 @@ void BlueSerial_Init(void)
 
 void BlueSerial_SendByte(uint8_t Byte)
 {
+    while (DL_UART_isTXFIFOFull(UART_0_INST));
     DL_UART_transmitData(UART_0_INST, Byte);
 }
 
@@ -73,48 +107,22 @@ void BlueSerial_Printf(char *format, ...)
     BlueSerial_SendString(String);
 }
 
-uint8_t BlueSerial_GetRxFlag(void)
+/* ==================== 接收接口（主循环使用） ==================== */
+
+uint16_t BlueSerial_GetRxCount(void)
 {
-    if (BlueSerial_RxFlag == 1) {
-        BlueSerial_RxFlag = 0;
-        return 1;
-    }
-    return 0;
+    return RingBuffer_GetCount(&rxBuffer);
 }
 
-/* ==================== 中断服务函数（参考工程风格） ==================== */
+uint8_t BlueSerial_GetRxData(void)
+{
+    return RingBuffer_Read(&rxBuffer);
+}
+
+/* ==================== 中断服务函数 ==================== */
 
 void UART_0_INST_IRQHandler(void)
 {
-    static uint8_t RxState = 0;
-    static uint8_t pRxPacket = 0;
-
     uint8_t RxData = DL_UART_receiveData(UART_0_INST);
-
-    if (RxState == 0)
-    {
-        if (RxData == '[' && BlueSerial_RxFlag == 0)
-        {
-            RxState = 1;
-            pRxPacket = 0;
-        }
-    }
-    else if (RxState == 1)
-    {
-        if (RxData == ']')
-        {
-            RxState = 0;
-            BlueSerial_RxPacket[pRxPacket] = '\0';
-            BlueSerial_RxFlag = 1;
-        }
-        else
-        {
-            BlueSerial_RxPacket[pRxPacket] = (char)RxData;
-            pRxPacket++;
-            if (pRxPacket >= sizeof(BlueSerial_RxPacket) - 1) {
-                pRxPacket = 0;
-                RxState = 0;
-            }
-        }
-    }
+    RingBuffer_Write(&rxBuffer, RxData);
 }
