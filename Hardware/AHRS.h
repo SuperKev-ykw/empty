@@ -1,7 +1,22 @@
-﻿/**
+/**
  * @file    AHRS.h
- * @brief   姿态解算头文件 (加速度计+磁力计+陀螺仪互补融合)
+ * @brief   姿态解算头文件（加速度计+磁力计+陀螺仪互补融合）
  * @details 提供 Roll/Pitch/Yaw 姿态角获取接口
+ *
+ * 函数清单：
+ *   - AHRS_CalibrateMag() : 磁力计硬铁校准（在线采集最大最小值）
+ *   - AHRS_SetMagOffset() : 手动设置磁力计偏移量
+ *   - AHRS_GetMagOffset() : 获取当前磁力计偏移量
+ *   - AHRS_Update()       : 姿态更新（融合加速度计+陀螺仪+磁力计）
+ *   - AHRS_GetYaw()       : 获取 Yaw 角度（0~360°）
+ *   - AHRS_GetPitch()     : 获取 Pitch 角度（-180~180°）
+ *   - AHRS_GetRoll()      : 获取 Roll 角度（-180~180°）
+ *
+ * 使用方式：
+ *   1. 调用 AHRS_CalibrateMag() 100+ 次采集磁力计最大最小值
+ *      （用户需旋转模块 360°）
+ *   2. 在 1ms / 10ms 定时器中周期性调用 AHRS_Update() 传入最新传感器数据
+ *   3. 调用 AHRS_GetYaw() / AHRS_GetPitch() / AHRS_GetRoll() 获取姿态角
  */
 
 #ifndef __AHRS_H

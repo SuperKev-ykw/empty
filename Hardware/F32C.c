@@ -17,6 +17,38 @@
  *
  * 反馈格式 (9 字节):
  *   0x7A ID 0x01 P3 P2 P1 P0 BCC 0x7B  (位置反馈)
+ *
+ * 硬件连接：
+ *   F32C TTL TX -> PA9  (UART1 RX)
+ *   F32C TTL RX -> PA8  (UART1 TX)
+ *   F32C GND    -> GND
+ *
+ * 函数清单：
+ *   - BCC_Sum()             : 计算 BCC 校验和（XOR，内部）
+ *   - Build_Enable()        : 构造使能命令（内部）
+ *   - Build_Mode()          : 构造设置模式命令（内部）
+ *   - Build_Speed()         : 构造设置速度命令（内部）
+ *   - Build_Position()      : 构造设置位置命令（内部）
+ *   - Build_Feedback()      : 构造请求反馈命令（内部）
+ *   - Send_Enable()         : 发送使能命令
+ *   - Send_Mode()           : 发送设置模式命令
+ *   - Send_Speed()          : 发送设置速度命令
+ *   - Send_Position()       : 发送设置位置命令
+ *   - Send_Feedback()       : 发送请求反馈命令
+ *   - Parse_Feedback()      : 解析电机位置反馈（状态机方式）
+ *
+ * 全局变量：
+ *   - motor1_pos / motor2_pos     : 电机当前位置（单位 0.1度）
+ *   - motor1_target / motor2_target : 电机目标位置
+ *   - motor1_online / motor2_online : 电机在线标志
+ *
+ * 使用方式：
+ *   1. 调用 Send_Enable(id) 使能电机
+ *   2. 调用 Send_Mode(id, MODE_POS) 设置为位置闭环模式
+ *   3. 调用 Send_Speed(id, speed) 设置运动速度
+ *   4. 调用 Send_Position(id, position) 设置目标位置
+ *   5. 调用 Send_Feedback(id) 请求位置反馈
+ *   6. 周期性调用 Parse_Feedback() 解析反馈更新 motor*_pos
  */
 
 #include "F32C.h"

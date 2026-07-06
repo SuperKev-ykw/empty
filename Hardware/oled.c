@@ -1,3 +1,51 @@
+/**
+ * @file    oled.c
+ * @brief   OLED 显示屏驱动实现（SSD1306 0.96 寸 128x64，硬件 I2C）
+ * @details 通过 MSPM0G3507 硬件 I2C 与 OLED 通信
+ *
+ * 硬件配置（SysConfig 已配置）：
+ *   OLED_INST：硬件 I2C 控制器
+ *   SCL/SDA：由 SysConfig 配置 I2C 引脚
+ *   OLED 设备地址：0x3C (7位)
+ *
+ * 显存模型：
+ *   - 全局数组 OLED_GRAM[144][8]
+ *   - 每页 8 行像素，共 8 页
+ *   - 修改显存后必须调用 OLED_Refresh() 才会更新到屏幕
+ *
+ * 函数清单：
+ *   - OLED_WR_Byte()         : 向 OLED 写一个字节（命令/数据）
+ *   - OLED_ColorTurn()       : 设置反色显示 (0=正常, 1=反色)
+ *   - OLED_DisplayTurn()     : 设置屏幕旋转 (0=正常, 1=180°)
+ *   - OLED_DisPlay_On()      : 打开显示
+ *   - OLED_DisPlay_Off()     : 关闭显示
+ *   - OLED_Refresh()         : 将显存内容刷新到屏幕
+ *   - OLED_Clear()           : 清空显存并刷新
+ *   - OLED_DrawPoint()       : 画一个点
+ *   - OLED_ClearPoint()      : 清除一个点
+ *   - OLED_DrawLine()        : 画线（横线/竖线/斜线）
+ *   - OLED_DrawCircle()      : 画圆
+ *   - OLED_ShowChar()        : 显示 ASCII 字符
+ *   - OLED_ShowString()      : 显示 ASCII 字符串（自动换行）
+ *   - OLED_ShowNum()         : 显示无符号整数
+ *   - OLED_ShowSignedNum()   : 显示有符号整数（带±号）
+ *   - OLED_ShowHexNum()      : 显示十六进制数
+ *   - OLED_ShowBinNum()      : 显示二进制数
+ *   - OLED_ShowFloatNum()    : 显示浮点数
+ *   - OLED_Printf()          : 格式化输出（类似 printf）
+ *   - OLED_ShowChinese()     : 显示中文字符
+ *   - OLED_WR_BP()           : 设置写数据的起始页/列
+ *   - OLED_ShowPicture()     : 显示位图
+ *   - OLED_Init()            : 初始化 OLED
+ *
+ * 使用方式：
+ *   1. 初始化：OLED_Init()
+ *   2. 可选：OLED_ColorTurn(0) / OLED_DisplayTurn(0)
+ *   3. 绘制/显示：OLED_Printf() / OLED_ShowString() ...
+ *   4. 刷新到屏幕：OLED_Refresh()
+ *   5. 清屏：OLED_Clear()
+ */
+
 #include "oled.h"
 #include "stdlib.h"
 #include "stdio.h"

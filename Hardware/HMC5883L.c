@@ -1,14 +1,27 @@
 /**
-  * @file    HMC5883L.c
-  * @brief   HMC5883L 三轴磁力计驱动
-  * @details 通过MPU6050的AUX I2C旁路(BYPASS)访问，共用 I2C1 总线
-  *          参考自 STM32 标准库工程 HMC5883L.c
-  *          所有 I2C 等待增加超时保护，防止总线挂死
-  *          配置：
-  *            - 8次平均采样 + 15Hz更新率
-  *            - 增益 1090 LSB/Ga (1.3Ga量程)
-  *            - 连续测量模式
-  */
+ * @file    HMC5883L.c
+ * @brief   HMC5883L 三轴磁力计驱动
+ * @details 通过 MPU6050 的 AUX I2C 旁路(BYPASS)访问 HMC5883L，
+ *          共用 I2C1 总线（GY_87_INST）。
+ *          所有 I2C 等待都增加了 20ms 超时保护，防止总线挂死。
+ *
+ *          配置：
+ *            - 8次平均采样 + 15Hz 输出率（CONFIG_A=0x70）
+ *            - 增益 1090 LSB/Ga (1.3Ga 量程)（CONFIG_B=0xA0）
+ *            - 连续测量模式（MODE=0x00）
+ *
+ * 硬件连接 (SysConfig 已配置)：
+ *   GY-87 SCL -> PB2 (I2C1_SCL)
+ *   GY-87 SDA -> PB3 (I2C1_SDA)
+ *
+ * 函数清单：
+ *   - HMC5883L_WriteReg()    : 写一个寄存器（带超时）
+ *   - HMC5883L_ReadRegs()    : 连续读多个寄存器（带超时）
+ *   - HMC5883L_Init()        : 初始化（使能 BYPASS、配置量程、连续模式）
+ *   - HMC5883L_GetData()     : 一次性读取 3 轴磁场数据
+ *
+ * 注意：HMC5883L 数据寄存器顺序为 X, Z, Y（注意 Y 和 Z 的顺序）
+ */
 
 #include "HMC5883L.h"
 #include "MPU6050.h"

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Timer.c
  * @brief   定时器驱动实现文件
  * @details 实现定时器中断计数功能
@@ -19,6 +19,7 @@
 #include "ti_msp_dl_config.h"
 #include "Timer.h"
 #include "key.h"
+#include "mpu6050/mpu_port.h"   /* MPU_Tick() */
 
 /* 定时器计数值定义 */
 volatile uint16_t Count0 = 0;
@@ -44,6 +45,7 @@ void TIMER_0_INST_IRQHandler(void)
     if (DL_TimerG_getPendingInterrupt(TIMER_0_INST) == DL_TIMER_IIDX_ZERO)
     {
         Key_Tick();
+        MPU_Tick();             /* MPU6050 DMP 驱动计时 */
 
         Count0++;
         if (Count0 >= 1000)

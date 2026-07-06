@@ -1,4 +1,6 @@
 eclipse.preferences.version=1
+encoding//Debug/Hardware/mpu6050/subdir_rules.mk=UTF-8
+encoding//Debug/Hardware/mpu6050/subdir_vars.mk=UTF-8
 encoding//Debug/Hardware/subdir_rules.mk=UTF-8
 encoding//Debug/Hardware/subdir_vars.mk=UTF-8
 encoding//Debug/Test/subdir_rules.mk=UTF-8

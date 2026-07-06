@@ -1,18 +1,36 @@
 /**
-  * @file    Grayscale.c
-  * @brief   8路灰度传感器驱动
-  * @details 实现灰度传感器的数据读取
-  *          参考自 STM32 标准库工程 Grayscale.c
-  *          引脚映射（GPIO 由 SysConfig 初始化）：
-  *            Gray_1（最右）：GPIOB.6
-  *            Gray_2：       GPIOB.7
-  *            Gray_3：       GPIOB.8
-  *            Gray_4：       GPIOB.9
-  *            Gray_5：       GPIOB.10
-  *            Gray_6：       GPIOB.11
-  *            Gray_7：       GPIOB.12
-  *            Gray_8（最左）：GPIOB.18
-  */
+ * @file    Grayscale.c
+ * @brief   8 路灰度传感器驱动
+ * @details 实现 8 路灰度传感器的数据读取和加权偏差计算
+ *
+ * 硬件引脚（GPIO 由 SysConfig 初始化）：
+ *   Gray_1（最右）：GPIOB.6
+ *   Gray_2：       GPIOB.7
+ *   Gray_3：       GPIOB.8
+ *   Gray_4：       GPIOB.9
+ *   Gray_5：       GPIOB.10
+ *   Gray_6：       GPIOB.11
+ *   Gray_7：       GPIOB.12
+ *   Gray_8（最左）：GPIOB.18
+ *
+ * 函数清单：
+ *   - Gray_Sensor_Init()      : 初始化 GPIO（SysConfig 已完成，本函数保留接口）
+ *   - Gray_Sensor_Read()      : 读取 8 路灰度传感器状态到全局变量
+ *   - Grayscale_GetDeviation(): 计算灰度加权偏差值
+ *
+ * 加权偏差算法：
+ *   偏差 = 加权和 / 检测到黑线的数量
+ *   权重：Gray_8=-4, Gray_7=-3, Gray_6=-2, Gray_5=-1,
+ *         Gray_4=+1, Gray_3=+2, Gray_2=+3, Gray_1=+4
+ *   >0 表示线偏右侧（车头偏左，需左转）
+ *   <0 表示线偏左侧（车头偏右，需右转）
+ *    0 表示在中间 或 全白离线
+ *
+ * 使用方式：
+ *   1. 调用 Gray_Sensor_Init()（可选，SysConfig 已初始化）
+ *   2. 在循环中调用 Grayscale_GetDeviation() 直接获取偏差值
+ *      或调用 Gray_Sensor_Read() 后读取 Gray_1 ~ Gray_8 全局变量
+ */
 
 #include "Grayscale.h"
 

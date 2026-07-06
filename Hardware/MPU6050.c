@@ -1,19 +1,34 @@
-﻿/**
-  * @file    MPU6050.c
-  * @brief   MPU6050 六轴陀螺仪+加速度计驱动
-  * @details 通过硬件 I2C1 (GY_87_INST) 读写寄存器
-  *          参考自 STM32 标准库工程 MPU6050.c
-  *          配置：
-  *            - 时钟源：陀螺仪X轴
-  *            - 采样率：100Hz (1kHz / (1+9))
-  *            - DLPF：5Hz
-  *            - 陀螺仪量程：±2000dps (灵敏度16.4 LSB/dps)
-  *            - 加速度计量程：±4g (灵敏度2048 LSB/g)
-  *
-  * 硬件连接 (SysConfig 已配置)：
-  *   GY-87 SCL -> PB2 (I2C1_SCL)
-  *   GY-87 SDA -> PB3 (I2C1_SDA)
-  */
+/**
+ * @file    MPU6050.c
+ * @brief   MPU6050 六轴陀螺仪+加速度计驱动
+ * @details 通过硬件 I2C1 (GY_87_INST) 读写寄存器
+ *          本驱动是基础版（直接读原始数据），不依赖 DMP。
+ *          如果需要使用 DMP 姿态解算，请使用 Hardware/mpu6050/mpu_port.c。
+ *
+ *          配置：
+ *            - 时钟源    ：陀螺仪X轴
+ *            - 采样率    ：100Hz (1kHz / (1+9))
+ *            - DLPF      ：5Hz
+ *            - 陀螺仪量程：±2000dps (灵敏度 16.4 LSB/dps)
+ *            - 加速度量程：±4g (灵敏度 2048 LSB/g)
+ *
+ * 硬件连接 (SysConfig 已配置)：
+ *   GY-87 SCL -> PB2 (I2C1_SCL)
+ *   GY-87 SDA -> PB3 (I2C1_SDA)
+ *
+ * 函数清单：
+ *   - GY_I2C_Init()         : 初始化硬件 I2C1（PB2/PB3, 400kHz）
+ *   - GY_I2C_WaitIdle()     : 等待 I2C 总线空闲（内部）
+ *   - MPU6050_WriteReg()    : 写一个寄存器
+ *   - MPU6050_ReadReg()     : 读一个寄存器
+ *   - MPU6050_ReadRegs()    : 连续读多个寄存器
+ *   - MPU6050_Init()        : 初始化 MPU6050（配置时钟、量程、采样率）
+ *   - MPU6050_GetID()       : 读 WHO_AM_I 寄存器（应返回 0x68）
+ *   - MPU6050_GetData()     : 一次性读取 6 轴原始数据
+ *
+ * 注意：MPU6050_ReadReg/WriteReg/ReadRegs 也被 HMC5883L 驱动复用
+ *       （因为磁力计通过 MPU6050 AUX I2C 旁路访问）。
+ */
 
 #include "MPU6050.h"
 #include "MPU6050_Reg.h"

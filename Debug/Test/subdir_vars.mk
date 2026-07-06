@@ -10,6 +10,7 @@ C_SRCS += \
 ../Test/GY_87_Test.c \
 ../Test/Gimbal_Test.c \
 ../Test/Grayscale_Test.c \
+../Test/MPU6050_Test.c \
 ../Test/OLED_LED_Test.c \
 ../Test/Serial_Test.c \
 ../Test/Timer_Key_Test.c 
@@ -19,6 +20,7 @@ C_DEPS += \
 ./Test/GY_87_Test.d \
 ./Test/Gimbal_Test.d \
 ./Test/Grayscale_Test.d \
+./Test/MPU6050_Test.d \
 ./Test/OLED_LED_Test.d \
 ./Test/Serial_Test.d \
 ./Test/Timer_Key_Test.d 
@@ -28,6 +30,7 @@ OBJS += \
 ./Test/GY_87_Test.o \
 ./Test/Gimbal_Test.o \
 ./Test/Grayscale_Test.o \
+./Test/MPU6050_Test.o \
 ./Test/OLED_LED_Test.o \
 ./Test/Serial_Test.o \
 ./Test/Timer_Key_Test.o 
@@ -37,6 +40,7 @@ OBJS__QUOTED += \
 "Test\GY_87_Test.o" \
 "Test\Gimbal_Test.o" \
 "Test\Grayscale_Test.o" \
+"Test\MPU6050_Test.o" \
 "Test\OLED_LED_Test.o" \
 "Test\Serial_Test.o" \
 "Test\Timer_Key_Test.o" 
@@ -46,6 +50,7 @@ C_DEPS__QUOTED += \
 "Test\GY_87_Test.d" \
 "Test\Gimbal_Test.d" \
 "Test\Grayscale_Test.d" \
+"Test\MPU6050_Test.d" \
 "Test\OLED_LED_Test.d" \
 "Test\Serial_Test.d" \
 "Test\Timer_Key_Test.d" 
@@ -55,6 +60,7 @@ C_SRCS__QUOTED += \
 "../Test/GY_87_Test.c" \
 "../Test/Gimbal_Test.c" \
 "../Test/Grayscale_Test.c" \
+"../Test/MPU6050_Test.c" \
 "../Test/OLED_LED_Test.c" \
 "../Test/Serial_Test.c" \
 "../Test/Timer_Key_Test.c" 

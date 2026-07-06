@@ -1,3 +1,40 @@
+/**
+ * @file    oled.h
+ * @brief   OLED 显示屏驱动头文件（SSD1306 0.96 寸 128x64，硬件 I2C）
+ * @details 通过 MSPM0G3507 硬件 I2C 与 OLED 通信，地址 0x3C
+ *
+ * 函数清单（详见 oled.c）：
+ *   - OLED_Init()        : 初始化 OLED
+ *   - OLED_ColorTurn()   : 设置反色显示
+ *   - OLED_DisplayTurn() : 设置屏幕旋转 180°
+ *   - OLED_DisPlay_On()  : 打开显示
+ *   - OLED_DisPlay_Off() : 关闭显示
+ *   - OLED_Refresh()     : 将显存内容刷新到屏幕
+ *   - OLED_Clear()       : 清空显存并刷新
+ *   - OLED_DrawPoint()   : 画一个点
+ *   - OLED_ClearPoint()  : 清除一个点
+ *   - OLED_DrawLine()    : 画线（横/竖/斜）
+ *   - OLED_DrawCircle()  : 画圆
+ *   - OLED_ShowChar()    : 显示 ASCII 字符
+ *   - OLED_ShowString()  : 显示 ASCII 字符串
+ *   - OLED_ShowNum()     : 显示无符号整数
+ *   - OLED_ShowSignedNum(): 显示有符号整数
+ *   - OLED_ShowHexNum()  : 显示十六进制数
+ *   - OLED_ShowBinNum()  : 显示二进制数
+ *   - OLED_ShowFloatNum(): 显示浮点数
+ *   - OLED_Printf()      : 格式化输出（类似 printf）
+ *   - OLED_ShowChinese() : 显示中文字符
+ *   - OLED_WR_BP()       : 设置写数据的起始页/列
+ *   - OLED_ShowPicture() : 显示位图
+ *
+ * 使用方式：
+ *   1. OLED_Init();
+ *   2. OLED_Printf(0, 0, 16, "Hello");
+ *   3. OLED_Refresh();
+ *
+ * 注意：修改显存后必须调用 OLED_Refresh() 才会显示到屏幕
+ */
+
 #ifndef __OLED_H
 #define __OLED_H
 

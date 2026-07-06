@@ -116,7 +116,7 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define GY_87_INST                                                          I2C1
 #define GY_87_INST_IRQHandler                                    I2C1_IRQHandler
 #define GY_87_INST_INT_IRQN                                        I2C1_INT_IRQn
-#define GY_87_BUS_SPEED_HZ                                                400000
+#define GY_87_BUS_SPEED_HZ                                                100000
 #define GPIO_GY_87_SDA_PORT                                                GPIOB
 #define GPIO_GY_87_SDA_PIN                                         DL_GPIO_PIN_3
 #define GPIO_GY_87_IOMUX_SDA                                     (IOMUX_PINCM16)

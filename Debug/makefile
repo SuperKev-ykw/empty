@@ -21,11 +21,18 @@ ORDERED_OBJS += \
 "./Hardware/Key.o" \
 "./Hardware/MPU6050.o" \
 "./Hardware/Serial.o" \
+"./Hardware/inv_mpu.o" \
+"./Hardware/inv_mpu_dmp_motion_driver.o" \
+"./Hardware/mpu_port.o" \
 "./Hardware/oled.o" \
+"./Hardware/mpu6050/inv_mpu.o" \
+"./Hardware/mpu6050/inv_mpu_dmp_motion_driver.o" \
+"./Hardware/mpu6050/mpu_port.o" \
 "./Test/BlueSerial_Test.o" \
 "./Test/GY_87_Test.o" \
 "./Test/Gimbal_Test.o" \
 "./Test/Grayscale_Test.o" \
+"./Test/MPU6050_Test.o" \
 "./Test/OLED_LED_Test.o" \
 "./Test/Serial_Test.o" \
 "./Test/Timer_Key_Test.o" \
@@ -44,10 +51,12 @@ RMDIR := RMDIR /S/Q
 -include sources.mk
 -include subdir_vars.mk
 -include Hardware/subdir_vars.mk
+-include Hardware/mpu6050/subdir_vars.mk
 -include Test/subdir_vars.mk
 -include system/subdir_vars.mk
 -include subdir_rules.mk
 -include Hardware/subdir_rules.mk
+-include Hardware/mpu6050/subdir_rules.mk
 -include Test/subdir_rules.mk
 -include system/subdir_rules.mk
 -include objects.mk
@@ -161,8 +170,8 @@ empty.out: $(OBJS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Hardware\AHRS.o" "Hardware\BlueSerial.o" "Hardware\F32C.o" "Hardware\Grayscale.o" "Hardware\HMC5883L.o" "Hardware\Key.o" "Hardware\MPU6050.o" "Hardware\Serial.o" "Hardware\oled.o" "Test\BlueSerial_Test.o" "Test\GY_87_Test.o" "Test\Gimbal_Test.o" "Test\Grayscale_Test.o" "Test\OLED_LED_Test.o" "Test\Serial_Test.o" "Test\Timer_Key_Test.o" "system\Timer.o" "system\delay.o" 
-	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Hardware\AHRS.d" "Hardware\BlueSerial.d" "Hardware\F32C.d" "Hardware\Grayscale.d" "Hardware\HMC5883L.d" "Hardware\Key.d" "Hardware\MPU6050.d" "Hardware\Serial.d" "Hardware\oled.d" "Test\BlueSerial_Test.d" "Test\GY_87_Test.d" "Test\Gimbal_Test.d" "Test\Grayscale_Test.d" "Test\OLED_LED_Test.d" "Test\Serial_Test.d" "Test\Timer_Key_Test.d" "system\Timer.d" "system\delay.d" 
+	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Hardware\AHRS.o" "Hardware\BlueSerial.o" "Hardware\F32C.o" "Hardware\Grayscale.o" "Hardware\HMC5883L.o" "Hardware\Key.o" "Hardware\MPU6050.o" "Hardware\Serial.o" "Hardware\inv_mpu.o" "Hardware\inv_mpu_dmp_motion_driver.o" "Hardware\mpu_port.o" "Hardware\oled.o" "Hardware\mpu6050\inv_mpu.o" "Hardware\mpu6050\inv_mpu_dmp_motion_driver.o" "Hardware\mpu6050\mpu_port.o" "Test\BlueSerial_Test.o" "Test\GY_87_Test.o" "Test\Gimbal_Test.o" "Test\Grayscale_Test.o" "Test\MPU6050_Test.o" "Test\OLED_LED_Test.o" "Test\Serial_Test.o" "Test\Timer_Key_Test.o" "system\Timer.o" "system\delay.o" 
+	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Hardware\AHRS.d" "Hardware\BlueSerial.d" "Hardware\F32C.d" "Hardware\Grayscale.d" "Hardware\HMC5883L.d" "Hardware\Key.d" "Hardware\MPU6050.d" "Hardware\Serial.d" "Hardware\inv_mpu.d" "Hardware\inv_mpu_dmp_motion_driver.d" "Hardware\mpu_port.d" "Hardware\oled.d" "Hardware\mpu6050\inv_mpu.d" "Hardware\mpu6050\inv_mpu_dmp_motion_driver.d" "Hardware\mpu6050\mpu_port.d" "Test\BlueSerial_Test.d" "Test\GY_87_Test.d" "Test\Gimbal_Test.d" "Test\Grayscale_Test.d" "Test\MPU6050_Test.d" "Test\OLED_LED_Test.d" "Test\Serial_Test.d" "Test\Timer_Key_Test.d" "system\Timer.d" "system\delay.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

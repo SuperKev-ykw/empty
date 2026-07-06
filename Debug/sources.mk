@@ -120,6 +120,7 @@ GEN_OPTS__QUOTED :=
 SUBDIRS := \
 . \
 Hardware \
+Hardware/mpu6050 \
 Test \
 system \
 

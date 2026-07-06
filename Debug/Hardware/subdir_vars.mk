@@ -14,6 +14,9 @@ C_SRCS += \
 ../Hardware/Key.c \
 ../Hardware/MPU6050.c \
 ../Hardware/Serial.c \
+../Hardware/inv_mpu.c \
+../Hardware/inv_mpu_dmp_motion_driver.c \
+../Hardware/mpu_port.c \
 ../Hardware/oled.c 
 
 C_DEPS += \
@@ -25,6 +28,9 @@ C_DEPS += \
 ./Hardware/Key.d \
 ./Hardware/MPU6050.d \
 ./Hardware/Serial.d \
+./Hardware/inv_mpu.d \
+./Hardware/inv_mpu_dmp_motion_driver.d \
+./Hardware/mpu_port.d \
 ./Hardware/oled.d 
 
 OBJS += \
@@ -36,6 +42,9 @@ OBJS += \
 ./Hardware/Key.o \
 ./Hardware/MPU6050.o \
 ./Hardware/Serial.o \
+./Hardware/inv_mpu.o \
+./Hardware/inv_mpu_dmp_motion_driver.o \
+./Hardware/mpu_port.o \
 ./Hardware/oled.o 
 
 OBJS__QUOTED += \
@@ -47,6 +56,9 @@ OBJS__QUOTED += \
 "Hardware\Key.o" \
 "Hardware\MPU6050.o" \
 "Hardware\Serial.o" \
+"Hardware\inv_mpu.o" \
+"Hardware\inv_mpu_dmp_motion_driver.o" \
+"Hardware\mpu_port.o" \
 "Hardware\oled.o" 
 
 C_DEPS__QUOTED += \
@@ -58,6 +70,9 @@ C_DEPS__QUOTED += \
 "Hardware\Key.d" \
 "Hardware\MPU6050.d" \
 "Hardware\Serial.d" \
+"Hardware\inv_mpu.d" \
+"Hardware\inv_mpu_dmp_motion_driver.d" \
+"Hardware\mpu_port.d" \
 "Hardware\oled.d" 
 
 C_SRCS__QUOTED += \
@@ -69,6 +84,9 @@ C_SRCS__QUOTED += \
 "../Hardware/Key.c" \
 "../Hardware/MPU6050.c" \
 "../Hardware/Serial.c" \
+"../Hardware/inv_mpu.c" \
+"../Hardware/inv_mpu_dmp_motion_driver.c" \
+"../Hardware/mpu_port.c" \
 "../Hardware/oled.c" 
 
 

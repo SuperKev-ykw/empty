@@ -1,6 +1,24 @@
-﻿/**
+/**
  * @file    MPU6050.h
  * @brief   MPU6050 六轴传感器驱动头文件
+ * @details 提供基础版 MPU6050 数据读取接口（不依赖 DMP）
+ *          硬件：I2C1 (PB2=SCL, PB3=SDA)
+ *
+ * 函数清单：
+ *   - MPU6050_Init()    : 初始化 MPU6050（配置时钟、量程、采样率）
+ *   - MPU6050_GetID()   : 读 WHO_AM_I 寄存器（应返回 0x68）
+ *   - MPU6050_GetData() : 一次性读取 6 轴原始数据（加速度+陀螺仪）
+ *
+ * 底层 I2C 接口（被 HMC5883L 复用）：
+ *   - MPU6050_WriteReg() : 写一个寄存器
+ *   - MPU6050_ReadReg()  : 读一个寄存器
+ *   - MPU6050_ReadRegs() : 连续读多个寄存器
+ *
+ * 使用方式：
+ *   1. MPU6050_Init();
+ *   2. 循环调用 MPU6050_GetData(&ax, &ay, &az, &gx, &gy, &gz);
+ *
+ * 注意：加速度原始值除以 2048 得到 g，陀螺仪原始值除以 16.4 得到 dps
  */
 
 #ifndef __MPU6050_H

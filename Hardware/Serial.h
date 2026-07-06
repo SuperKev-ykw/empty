@@ -2,15 +2,28 @@
  * @file    Serial.h
  * @brief   串口通信驱动头文件
  * @details 提供串口初始化和收发功能（基于 MSPM0 SysConfig 配置）
- * 
+ *
  * 硬件配置（SysConfig 已配置）：
  *   UART1：PA8(TX), PA9(RX), 115200-8N1
- * 
+ *
+ * 函数清单（详见 Serial.c）：
+ *   - Serial_Init()        : 初始化（使能 NVIC 中断）
+ *   - Serial_SendByte()    : 发送单个字节
+ *   - Serial_SendArray()   : 发送字节数组
+ *   - Serial_SendString()  : 发送字符串
+ *   - Serial_SendNumber()  : 按指定位数发送数字
+ *   - Serial_Printf()      : 格式化输出（类似 printf）
+ *   - Serial_GetRxCount()  : 获取接收缓冲区数据量
+ *   - Serial_GetRxData()   : 从接收缓冲区读一个字节
+ *
  * 使用方式：
  *   1. SysConfig 已初始化串口外设
  *   2. 调用 Serial_Init() 使能 NVIC 中断
  *   3. 调用 Serial_SendByte() / Serial_SendString() / Serial_Printf() 发送
  *   4. 中断自动接收数据到环形缓冲区，调用 Serial_GetRxData() 读取
+ *
+ * 注意：与 BlueSerial（UART0）共用相同的 API 风格，
+ *       仅硬件实例（UART_0_INST vs UART_1_INST）不同。
  */
 
 #ifndef __SERIAL_H

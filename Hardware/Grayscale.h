@@ -1,9 +1,22 @@
 /**
-  * @file    Grayscale.h
-  * @brief   8路灰度传感器驱动接口
-  * @details 定义灰度传感器引脚、电平宏和函数声明
-  *          参考自 STM32 标准库工程 Grayscale.h
-  */
+ * @file    Grayscale.h
+ * @brief   8 路灰度传感器驱动接口
+ * @details 定义灰度传感器引脚、电平宏、加权表和函数声明
+ *
+ * 硬件引脚：Gray_1=GPIOB.6（最右）, ..., Gray_8=GPIOB.18（最左）
+ *
+ * 加权偏差算法：
+ *   偏差 = 加权和 / 检测到黑线的数量
+ *   权重：Gray_8=-4, Gray_7=-3, Gray_6=-2, Gray_5=-1,
+ *         Gray_4=+1, Gray_3=+2, Gray_2=+3, Gray_1=+4
+ *
+ * 函数清单：
+ *   - Gray_Sensor_Init()      : 初始化 GPIO（SysConfig 已完成，本函数保留接口）
+ *   - Gray_Sensor_Read()      : 读取 8 路灰度传感器状态到全局变量
+ *   - Grayscale_GetDeviation(): 计算灰度加权偏差值
+ *
+ * 全局变量：Gray_1 ~ Gray_8（每个为 0=白底 或 1=黑线）
+ */
 
 #ifndef __GRAYSCALE_H
 #define __GRAYSCALE_H

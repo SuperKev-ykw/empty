@@ -1,12 +1,30 @@
 /**
-  * @file    AHRS.c
-  * @brief   姿态解算 (加速度计+磁力计+陀螺仪互补融合)
-  * @details Roll/Pitch 来自加速度计静态解算
-  *          Yaw 通过互补滤波融合陀螺仪和磁力计：
-  *            yaw = 0.98 * (yaw + gyroZ * dt) + 0.02 * mag_yaw
-  *          陀螺仪提供短期稳定性，磁力计抑制长期零漂
-  *          参考自 STM32 标准库工程 AHRS.c，增加陀螺仪融合
-  */
+ * @file    AHRS.c
+ * @brief   姿态解算（加速度计+磁力计+陀螺仪互补融合）
+ * @details Roll/Pitch 来自加速度计静态解算
+ *          Yaw 通过互补滤波融合陀螺仪和磁力计：
+ *            yaw = 0.98 * (yaw + gyroZ * dt) + 0.02 * mag_yaw
+ *          陀螺仪提供短期稳定性，磁力计抑制长期零漂
+ *
+ * 函数清单：
+ *   - AHRS_CalibrateMag()    : 磁力计硬铁校准（在线采集最大最小值）
+ *   - AHRS_SetMagOffset()    : 手动设置磁力计偏移量
+ *   - AHRS_GetMagOffset()    : 获取当前磁力计偏移量
+ *   - AHRS_Update()          : 姿态更新（融合加速度计+陀螺仪+磁力计）
+ *   - AHRS_GetYaw()          : 获取 Yaw 角度（0~360°）
+ *   - AHRS_GetPitch()        : 获取 Pitch 角度（-180~180°）
+ *   - AHRS_GetRoll()         : 获取 Roll 角度（-180~180°）
+ *
+ * 使用方式：
+ *   1. 调用 AHRS_CalibrateMag() 100+ 次采集磁力计最大最小值
+ *      （用户需旋转模块 360°）
+ *   2. 在 1ms / 10ms 定时器中周期性调用 AHRS_Update() 传入最新传感器数据
+ *   3. 调用 AHRS_GetYaw() / AHRS_GetPitch() / AHRS_GetRoll() 获取姿态角
+ *
+ * 注意：
+ *   - Yaw 的范围是 0~360°（不是 -180~180°）
+ *   - 互补滤波 alpha=0.98，dt=0.01s 时时间常数约 0.5s
+ */
 
 #include "AHRS.h"
 #include <math.h>

@@ -366,8 +366,8 @@ SYSCONFIG_WEAK void SYSCFG_DL_GY_87_init(void) {
 
     /* Configure Controller Mode */
     DL_I2C_resetControllerTransfer(GY_87_INST);
-    /* Set frequency to 400000 Hz*/
-    DL_I2C_setTimerPeriod(GY_87_INST, 9);
+    /* Set frequency to 100000 Hz*/
+    DL_I2C_setTimerPeriod(GY_87_INST, 39);
     DL_I2C_setControllerTXFIFOThreshold(GY_87_INST, DL_I2C_TX_FIFO_LEVEL_EMPTY);
     DL_I2C_setControllerRXFIFOThreshold(GY_87_INST, DL_I2C_RX_FIFO_LEVEL_BYTES_1);
     DL_I2C_enableControllerClockStretching(GY_87_INST);

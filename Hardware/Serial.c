@@ -1,15 +1,38 @@
-﻿/**
+/**
  * @file    Serial.c
  * @brief   串口通信驱动实现文件
  * @details 基于 MSPM0G3507 + SysConfig 配置的 UART 驱动
- * 
- * 本文件参考 STM32 标准库的串口驱动设计思路，但适配了 MSPM0 平台：
+ *
+ * 本驱动基于 STM32 标准库设计思路，适配 MSPM0 平台：
  *   - 外设和 GPIO 初始化由 SysConfig 完成（无需手动配置时钟和引脚）
  *   - 使用 MSPM0 DriverLib API（DL_UART_xxx）
  *   - 接收采用环形缓冲区 + 中断方式
- * 
+ *
  * 硬件配置（SysConfig）：
  *   UART1：PA8(TX), PA9(RX), 115200-8N1
+ *
+ * 函数清单：
+ *   - RingBuffer_Write()    : 环形缓冲区写入（内部）
+ *   - RingBuffer_Read()     : 环形缓冲区读出（内部）
+ *   - RingBuffer_GetCount() : 获取缓冲区数据量（内部）
+ *   - Serial_Init()         : 初始化（使能 NVIC 中断）
+ *   - Serial_SendByte()     : 发送单个字节
+ *   - Serial_SendArray()    : 发送字节数组
+ *   - Serial_SendString()   : 发送字符串
+ *   - Serial_SendNumber()   : 按指定位数发送数字
+ *   - Serial_Printf()       : 格式化输出（类似 printf）
+ *   - Serial_GetRxCount()   : 获取接收缓冲区数据量
+ *   - Serial_GetRxData()    : 从接收缓冲区读一个字节
+ *   - UART_1_INST_IRQHandler(): UART1 接收中断服务函数
+ *
+ * 使用方式：
+ *   1. 初始化：Serial_Init()
+ *   2. 发送：Serial_Printf() / Serial_SendString() / ...
+ *   3. 接收：在主循环中调用 Serial_GetRxCount() 检测，
+ *           再用 Serial_GetRxData() 逐字节读取并自行解析协议
+ *
+ * 注意：与 BlueSerial（UART0）共用相同的 API 风格，
+ *       仅硬件实例（UART_0_INST vs UART_1_INST）不同。
  */
 
 #include "ti_msp_dl_config.h"

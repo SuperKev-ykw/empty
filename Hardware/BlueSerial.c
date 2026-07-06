@@ -5,6 +5,26 @@
  *
  * 硬件配置（SysConfig）：
  *   UART0：PA10(TX), PA11(RX), 115200-8N1
+ *
+ * 函数清单：
+ *   - RingBuffer_Write()      : 环形缓冲区写入（内部）
+ *   - RingBuffer_Read()       : 环形缓冲区读出（内部）
+ *   - RingBuffer_GetCount()   : 获取缓冲区数据量（内部）
+ *   - BlueSerial_Init()       : 初始化（使能 NVIC 中断）
+ *   - BlueSerial_SendByte()   : 发送单个字节
+ *   - BlueSerial_SendArray()  : 发送字节数组
+ *   - BlueSerial_SendString() : 发送字符串
+ *   - BlueSerial_SendNumber() : 按指定位数发送数字
+ *   - BlueSerial_Printf()     : 格式化发送（类似 printf）
+ *   - BlueSerial_GetRxCount() : 获取接收缓冲区数据量
+ *   - BlueSerial_GetRxData()  : 从接收缓冲区读一个字节
+ *   - UART_0_INST_IRQHandler(): UART0 接收中断服务函数
+ *
+ * 使用方式：
+ *   1. 初始化：BlueSerial_Init()
+ *   2. 发送：BlueSerial_Printf() / BlueSerial_SendString() / ...
+ *   3. 接收：在主循环中调用 BlueSerial_GetRxCount() 检测，
+ *           再用 BlueSerial_GetRxData() 逐字节读取并自行解析协议
  */
 
 #include "ti_msp_dl_config.h"
