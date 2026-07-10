@@ -30,22 +30,121 @@
 //  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  */
 
+// /**
+//  * @file    empty.c
+//  * @brief   主程序：循迹控制 + 蓝牙摇杆手动控制
+//  *
+//  * 模式切换（按 Key1 启停）：
+//  *   停止：RunFlag=0，电机停转
+//  *   循迹：RunFlag=1 + 摇杆居中 → 灰度传感器循迹
+//  *   手动：RunFlag=1 + 摇杆推动 → 摇杆控制前进/后退/转向
+//  *
+//  * 内环（速度环）由 TIMER_0 1ms 中断中每 20ms 执行：
+//  *   编码器测速(5点滑动平均) → Motor_Speed_PID_Update() → PWM输出
+//  *
+//  * 蓝牙协议（与江科大平衡车兼容）：
+//  *   [joystick,LH,LV,RH,RV]  摇杆控制
+//  *   [slider,Name,Value]      参数调节
+//  */
+
 // #include "ti_msp_dl_config.h"
 // #include "delay.h"
 // #include "oled.h"
+// #include "Timer.h"
+// #include "Motor.h"
+// #include "Encoder.h"
+// #include "Grayscale.h"
+// #include "key.h"
+// #include "Serial.h"
+// #include "BlueSerial.h"
 
 // int main(void)
 // {
 //     SYSCFG_DL_init();
 
-//     OLED_Init();
+//     /* ---- 外设初始化 ---- */
+//     Timer_Init();                        /* TIMER_0 1ms系统时基 */
+//     OLED_Init();                         /* OLED 128×64 */
 //     OLED_ColorTurn(0);
 //     OLED_DisplayTurn(0);
 //     OLED_Clear();
-//     OLED_Printf(0, 0, 16, "Hello World!");
+
+//     Motor_Init();                        /* 电机GPIO+PWM */
+//     Encoder_Init();                      /* 编码器GPIO中断 */
+//     BlueSerial_Init();                   /* 蓝牙UART0中断 */
+//     Motor_Speed_Init();                  /* 速度环PID清零 */
+//     Gray_Sensor_Init();                  /* 灰度传感器 */
+
+//     OLED_Printf(0, 0, 16, "Tracking Ready!");
+//     OLED_Refresh();
+//     delay_ms(500);
+
+//     OLED_Clear();
 //     OLED_Refresh();
 
-//     while (1) {
-//         delay_ms(50);
-//     }
+//     while (1)
+//     {
+//         /* ---- 按键扫描 ---- */
+//         uint8_t key = Key_GetNum();
+
+//         /* Key1：启停翻转 */
+//         if (key == 1)
+//         {
+//             if (RunFlag == 0)
+//             {
+//                 RunFlag = 1;
+//                 Turn_State = TURN_IDLE;
+//                 Turn_Direction = 0;
+//                 Gray_SoftStart_Reset();
+//             }
+//             else
+//             {
+//                 RunFlag = 0;
+//                 Motor_SetTargetSpeed(0, 0);
+//                 Gray_SoftStart_Reset();
+//                 Motor_Speed_PID_Reset();
+//             }
+//         }
+
+//         /* ---- 循迹 / 停止控制 ---- */
+//         if (RunFlag)
+//         {
+//             Gray_Track_Control();
+//         }
+//         else
+//         {
+//             Motor_SetTargetSpeed(0, 0);
+//             Motor_Speed_PID_Reset();
+//             Motor_SetPWM(MOTOR_LEFT, 0);
+//             Motor_SetPWM(MOTOR_RIGHT, 0);
+//         }
+
+//         /* ---- 蓝牙调参（解析 [slider,Name,Value]） ---- */
+//         BlueSerial_Tasks();
+
+//         /* ---- OLED显示（8号字体，固定宽度防残留） ---- */
+//         OLED_Printf(0, 0,  8, "Track:%s", RunFlag ? "ON " : "OFF");
+//         OLED_Printf(0, 8, 8, "TgtL:%-4d TgtR:%-4d", PWML, PWMR);
+//         OLED_Printf(0, 16, 8, "ActL:%-4d ActR:%-4d",
+//             Encoder_GetSpeed(ENCODER_LEFT),
+//             Encoder_GetSpeed(ENCODER_RIGHT));
+//         OLED_Printf(0, 24, 8, "Dev:%6.2f", Grayscale_GetDeviation_Track());
+//         OLED_Printf(0, 32, 8, "Dir:%-2d St:%-2d",
+//             Turn_Direction, Turn_State);
+//         OLED_Printf(0, 40, 8, "Kp:%-5.1f Ki:%-5.1f Kd:%-5.1f",
+//             Motor_Kp, Motor_Ki, Motor_Kd);
+//         OLED_Printf(0, 48, 8, "TKp:%-5.1f TKd:%-5.1f",
+//             Track_Kp, Track_Kd);
+//         OLED_Refresh();
+
+//         /* ---- 串口1发送四参数：左目标,右目标,左实际,右实际 ---- */
+//         {
+//             Serial_Printf("%d,%d,%d,%d\n",
+//                 (int16_t)motor_l_ctrl.target_speed,
+//                 (int16_t)motor_r_ctrl.target_speed,
+//                 Encoder_GetSpeed(ENCODER_LEFT),
+//                 Encoder_GetSpeed(ENCODER_RIGHT));
+//         }  /* 串口输出结束 */
+
+//     }  /* while(1) 结束 */
 // }

@@ -85,7 +85,10 @@ system/Timer.o: ../system/Timer.c \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h \
  ../system/Timer.h D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/key.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/mpu6050/mpu_port.h
+ D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/mpu6050/mpu_port.h \
+ D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Grayscale.h \
+ D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Motor.h \
+ D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Encoder.h
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h:
@@ -172,3 +175,6 @@ C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
 ../system/Timer.h:
 D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/key.h:
 D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/mpu6050/mpu_port.h:
+D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Grayscale.h:
+D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Motor.h:
+D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Encoder.h:

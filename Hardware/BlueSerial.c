@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    BlueSerial.c
  * @brief   蓝牙串口驱动实现文件（UART0）
  * @details 使用环形缓冲区接收原始字节，供主循环解析
@@ -31,6 +31,22 @@
 #include "BlueSerial.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
+#include "Motor.h"
+#include "Grayscale.h"
+
+/* ==================== 全局变量定义 ==================== */
+
+char BlueSerial_RxPacket[100];
+volatile uint8_t BlueSerial_RxFlag = 0;
+
+/* 摇杆数据 */
+int8_t  Joystick_LH = 0;
+int8_t  Joystick_LV = 0;
+int8_t  Joystick_RH = 0;
+int8_t  Joystick_RV = 0;
+uint8_t Joystick_Active = 0;
 
 /* ==================== 环形缓冲区 ==================== */
 
@@ -144,5 +160,120 @@ uint8_t BlueSerial_GetRxData(void)
 void UART_0_INST_IRQHandler(void)
 {
     uint8_t RxData = DL_UART_receiveData(UART_0_INST);
+
+    /* 原始字节写入环形缓冲区（供 0xAA 等协议解析） */
     RingBuffer_Write(&rxBuffer, RxData);
+
+    /* 自动提取 [ ... ] 数据包（类比参考工程 江科大平衡车/04-速度环） */
+    {
+        static uint8_t RxState = 0;
+        static uint8_t pRxPacket = 0;
+
+        if (RxState == 0)
+        {
+            if (RxData == '[' && BlueSerial_RxFlag == 0)
+            {
+                RxState = 1;
+                pRxPacket = 0;
+            }
+        }
+        else if (RxState == 1)
+        {
+            if (RxData == ']')
+            {
+                RxState = 0;
+                BlueSerial_RxPacket[pRxPacket] = '\0';
+                BlueSerial_RxFlag = 1;
+            }
+            else if (pRxPacket < (int)(sizeof(BlueSerial_RxPacket) - 1))
+            {
+                BlueSerial_RxPacket[pRxPacket] = (char)RxData;
+                pRxPacket++;
+            }
+            else
+            {
+                /* 数据包超过缓冲区，丢弃 */
+                RxState = 0;
+            }
+        }
+    }
+}
+
+/* ==================== 蓝牙调参任务（主循环中调用） ==================== */
+
+/**
+ * @brief  蓝牙调参任务
+ * @details 解析手机APP发来的 [slider,Name,Value] 协议，更新PID等运行参数。
+ *          支持以下参数：
+ *          电机速度环：MKp, MKi, MKd
+ *          循迹位置环：TKp, TKd
+ *          循迹速度：  BSp (BaseSpeed)
+ *          拐弯参数：  TdT (TurnDecelTime), TdP (TurnPower), TdS (DecelSpeed)
+ *
+ * @note  协议格式：手机发送 [slider,MKp,2.5]
+ *        与参考工程 (STM32_CAR) 完全兼容
+ */
+void BlueSerial_Tasks(void)
+{
+    if (BlueSerial_RxFlag == 0)
+        return;
+
+    /* 拷贝到本地缓冲区再解析，避免与 ISR 写冲突 */
+    char packet[100];
+    uint16_t i;
+    for (i = 0; i < sizeof(packet) - 1; i++)
+    {
+        packet[i] = BlueSerial_RxPacket[i];
+        if (packet[i] == '\0')
+            break;
+    }
+    packet[sizeof(packet) - 1] = '\0';
+    BlueSerial_RxFlag = 0;
+
+    /* 解析：格式为 "Tag,Name,Value" */
+    char *Tag = strtok(packet, ",");
+    if (Tag == NULL)
+        return;
+
+    /* ============ 滑杆指令：调参 ============ */
+    if (strcmp(Tag, "slider") == 0)
+    {
+        char *Name = strtok(NULL, ",");
+        char *Value = strtok(NULL, ",");
+        if (Name == NULL || Value == NULL)
+            return;
+
+        float val_f = atof(Value);
+        uint16_t val_u16 = (uint16_t)atoi(Value);
+
+        /* 电机速度环PID */
+        if      (strcmp(Name, "MKp") == 0) { Motor_Kp = val_f; }
+        else if (strcmp(Name, "MKi") == 0) { Motor_Ki = val_f; }
+        else if (strcmp(Name, "MKd") == 0) { Motor_Kd = val_f; }
+        /* 循迹位置环PD */
+        else if (strcmp(Name, "TKp") == 0) { Track_Kp = val_f; }
+        else if (strcmp(Name, "TKd") == 0) { Track_Kd = val_f; }
+        /* 循迹速度 */
+        else if (strcmp(Name, "BSp") == 0) { BaseSpeed = val_u16; }
+        /* 拐弯参数 */
+        else if (strcmp(Name, "TdT") == 0) { TurnDecelTime = val_u16; }
+        else if (strcmp(Name, "TdP") == 0) { TurnPower = val_u16; }
+        else if (strcmp(Name, "TdS") == 0) { DecelSpeed = val_u16; }
+        /* 摇杆转向灵敏度 */
+        else if (strcmp(Name, "JTrn") == 0) { JoyTurn = val_u16; }
+    }
+    /* ============ 摇杆指令：手动控制 ============ */
+    else if (strcmp(Tag, "joystick") == 0)
+    {
+        Joystick_LH = (int8_t)atoi(strtok(NULL, ","));
+        Joystick_LV = (int8_t)atoi(strtok(NULL, ","));
+        Joystick_RH = (int8_t)atoi(strtok(NULL, ","));
+        Joystick_RV = (int8_t)atoi(strtok(NULL, ","));
+
+        /* 左垂直（前后）或右水平（转向）有非零值 = 摇杆激活 */
+        if (Joystick_LV != 0 || Joystick_RH != 0)
+            Joystick_Active = 1;
+        else
+            Joystick_Active = 0;
+    }
 }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    oled.c
  * @brief   OLED 显示屏驱动实现（SSD1306 0.96 寸 128x64，硬件 I2C）
  * @details 通过 MSPM0G3507 硬件 I2C 与 OLED 通信
@@ -228,19 +228,27 @@ void OLED_ShowChar(u8 x,u8 y,u8 chr,u8 size1)
 {
 	u8 i,m,temp,size2,chr1;
 	u8 y0=y;
-	size2=(size1/8+((size1%8)?1:0))*(size1/2);  
+	if(size1==8) size2=6;
+	else size2=(size1/8+((size1%8)?1:0))*(size1/2);  
 	chr1=chr-' ';  
 	for(i=0;i<size2;i++)
 	{
 		if(size1==12) {temp=asc2_1206[chr1][i];} 
 		else if(size1==16) {temp=asc2_1608[chr1][i];} 
 		else if(size1==24) {temp=asc2_2412[chr1][i];} 
+		else if(size1==8) {temp=OLED_F6x8[chr1][i];} 
 		else return;
 		for(m=0;m<8;m++)           
 		{
-			if(temp&0x80)OLED_DrawPoint(x,y);
-			else OLED_ClearPoint(x,y);
-			temp<<=1;
+			if(size1==8) {
+				if(temp&0x01)OLED_DrawPoint(x,y);
+				else OLED_ClearPoint(x,y);
+				temp>>=1;
+			} else {
+				if(temp&0x80)OLED_DrawPoint(x,y);
+				else OLED_ClearPoint(x,y);
+				temp<<=1;
+			}
 			y++;
 			if((y-y0)==size1)
 			{
@@ -258,7 +266,8 @@ void OLED_ShowString(u8 x,u8 y,u8 *chr,u8 size1)
 	while((*chr>=' ')&&(*chr<='~'))
 	{
 		OLED_ShowChar(x,y,*chr,size1);
-		x+=size1/2;
+		if(size1==8) x+=6;
+		else x+=size1/2;
 		if(x>128-size1)  //换行
 		{
 			x=0;
@@ -432,10 +441,52 @@ void OLED_ShowPicture(u8 x0,u8 y0,u8 x1,u8 y1,u8 BMP[])
 	}
 }
 
+/* I2C 总线恢复：复位后 OLED 可能拉住 SDA/SCL，发时钟脉冲释放总线 */
+static void OLED_I2C_BusRecovery(void)
+{
+    uint8_t i;
+
+    /* 保存原 IOMUX 配置 */
+    uint32_t scl_cfg = IOMUX->SECCFG.PINCM[GPIO_OLED_IOMUX_SCL];
+    uint32_t sda_cfg = IOMUX->SECCFG.PINCM[GPIO_OLED_IOMUX_SDA];
+
+    /* SCL → GPIO 推挽输出 */
+    DL_GPIO_initDigitalOutput(GPIO_OLED_IOMUX_SCL);
+    DL_GPIO_clearPins(GPIO_OLED_SCL_PORT, GPIO_OLED_SCL_PIN);
+
+    /* SDA → GPIO 推挽输出，初始高电平（释放总线） */
+    DL_GPIO_initDigitalOutput(GPIO_OLED_IOMUX_SDA);
+    DL_GPIO_setPins(GPIO_OLED_SDA_PORT, GPIO_OLED_SDA_PIN);
+
+    /* 发出 9 个 SCL 脉冲，SDA 保持高电平 */
+    for (i = 0; i < 9; i++) {
+        DL_GPIO_setPins(GPIO_OLED_SCL_PORT, GPIO_OLED_SCL_PIN);
+        { volatile uint32_t d = 0; while (d < 200) d++; }
+        DL_GPIO_clearPins(GPIO_OLED_SCL_PORT, GPIO_OLED_SCL_PIN);
+        { volatile uint32_t d = 0; while (d < 200) d++; }
+    }
+
+    /* 发送 STOP 条件：SDA LOW → SDA HIGH（在 SCL HIGH 时跳变） */
+    DL_GPIO_clearPins(GPIO_OLED_SDA_PORT, GPIO_OLED_SDA_PIN);  /* SDA LOW */
+    { volatile uint32_t d = 0; while (d < 200) d++; }
+    DL_GPIO_setPins(GPIO_OLED_SCL_PORT, GPIO_OLED_SCL_PIN);    /* SCL HIGH */
+    { volatile uint32_t d = 0; while (d < 200) d++; }
+    DL_GPIO_setPins(GPIO_OLED_SDA_PORT, GPIO_OLED_SDA_PIN);    /* SDA HIGH = STOP */
+    { volatile uint32_t d = 0; while (d < 200) d++; }
+    DL_GPIO_clearPins(GPIO_OLED_SCL_PORT, GPIO_OLED_SCL_PIN);  /* SCL LOW */
+
+    /* 恢复 I2C 外设功能（写入原配置，包含 PC_CONNECTED 位） */
+    IOMUX->SECCFG.PINCM[GPIO_OLED_IOMUX_SCL] = scl_cfg;
+    IOMUX->SECCFG.PINCM[GPIO_OLED_IOMUX_SDA] = sda_cfg;
+}
+
 //OLED的初始化
 void OLED_Init(void)
 {
-	// 4针OLED没有RST引脚，直接延时等待屏幕内部RC电路上电复位完成
+	// 4针OLED没有RST引脚，先做I2C总线恢复（复位后OLED可能拉住总线导致通信失败）
+	OLED_I2C_BusRecovery();
+	
+	// 延时等待屏幕内部RC电路上电复位完成
 	delay_ms(100);
 	
 	OLED_WR_Byte(0xAE,OLED_CMD);//--turn off oled panel

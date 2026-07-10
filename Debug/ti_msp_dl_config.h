@@ -89,11 +89,42 @@ extern "C" {
 bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 
 
+/* Defines for PWM_A */
+#define PWM_A_INST                                                         TIMA1
+#define PWM_A_INST_IRQHandler                                   TIMA1_IRQHandler
+#define PWM_A_INST_INT_IRQN                                     (TIMA1_INT_IRQn)
+#define PWM_A_INST_CLK_FREQ                                             40000000
+/* GPIO defines for channel 1 */
+#define GPIO_PWM_A_C1_PORT                                                 GPIOB
+#define GPIO_PWM_A_C1_PIN                                          DL_GPIO_PIN_1
+#define GPIO_PWM_A_C1_IOMUX                                      (IOMUX_PINCM13)
+#define GPIO_PWM_A_C1_IOMUX_FUNC                     IOMUX_PINCM13_PF_TIMA1_CCP1
+#define GPIO_PWM_A_C1_IDX                                    DL_TIMER_CC_1_INDEX
+
+/* Defines for PWM_B */
+#define PWM_B_INST                                                         TIMG8
+#define PWM_B_INST_IRQHandler                                   TIMG8_IRQHandler
+#define PWM_B_INST_INT_IRQN                                     (TIMG8_INT_IRQn)
+#define PWM_B_INST_CLK_FREQ                                             40000000
+/* GPIO defines for channel 0 */
+#define GPIO_PWM_B_C0_PORT                                                 GPIOB
+#define GPIO_PWM_B_C0_PIN                                         DL_GPIO_PIN_15
+#define GPIO_PWM_B_C0_IOMUX                                      (IOMUX_PINCM32)
+#define GPIO_PWM_B_C0_IOMUX_FUNC                     IOMUX_PINCM32_PF_TIMG8_CCP0
+#define GPIO_PWM_B_C0_IDX                                    DL_TIMER_CC_0_INDEX
+
+
+
 /* Defines for TIMER_0 */
 #define TIMER_0_INST                                                     (TIMG0)
 #define TIMER_0_INST_IRQHandler                                 TIMG0_IRQHandler
 #define TIMER_0_INST_INT_IRQN                                   (TIMG0_INT_IRQn)
 #define TIMER_0_INST_LOAD_VALUE                                            (49U)
+/* Defines for TIMER_ENCODER */
+#define TIMER_ENCODER_INST                                              (TIMG12)
+#define TIMER_ENCODER_INST_IRQHandler                          TIMG12_IRQHandler
+#define TIMER_ENCODER_INST_INT_IRQN                            (TIMG12_INT_IRQn)
+#define TIMER_ENCODER_INST_LOAD_VALUE                                   (99999U)
 
 
 
@@ -212,6 +243,41 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for Gray_8: GPIOB.18 with pinCMx 44 on package pin 15 */
 #define Gray_Gray_8_PIN                                         (DL_GPIO_PIN_18)
 #define Gray_Gray_8_IOMUX                                        (IOMUX_PINCM44)
+/* Port definition for Pin Group Motors */
+#define Motors_PORT                                                      (GPIOB)
+
+/* Defines for AIN: GPIOB.4 with pinCMx 17 on package pin 52 */
+#define Motors_AIN_PIN                                           (DL_GPIO_PIN_4)
+#define Motors_AIN_IOMUX                                         (IOMUX_PINCM17)
+/* Defines for BIN: GPIOB.16 with pinCMx 33 on package pin 4 */
+#define Motors_BIN_PIN                                          (DL_GPIO_PIN_16)
+#define Motors_BIN_IOMUX                                         (IOMUX_PINCM33)
+/* Defines for Encoder_A1: GPIOA.7 with pinCMx 14 on package pin 49 */
+#define Encoders_Encoder_A1_PORT                                         (GPIOA)
+// pins affected by this interrupt request:["Encoder_A1","Encoder_A2"]
+#define Encoders_GPIOA_INT_IRQN                                 (GPIOA_INT_IRQn)
+#define Encoders_GPIOA_INT_IIDX                 (DL_INTERRUPT_GROUP1_IIDX_GPIOA)
+#define Encoders_Encoder_A1_IIDX                             (DL_GPIO_IIDX_DIO7)
+#define Encoders_Encoder_A1_PIN                                  (DL_GPIO_PIN_7)
+#define Encoders_Encoder_A1_IOMUX                                (IOMUX_PINCM14)
+/* Defines for Encoder_A2: GPIOA.25 with pinCMx 55 on package pin 26 */
+#define Encoders_Encoder_A2_PORT                                         (GPIOA)
+#define Encoders_Encoder_A2_IIDX                            (DL_GPIO_IIDX_DIO25)
+#define Encoders_Encoder_A2_PIN                                 (DL_GPIO_PIN_25)
+#define Encoders_Encoder_A2_IOMUX                                (IOMUX_PINCM55)
+/* Defines for Encoder_B1: GPIOB.13 with pinCMx 30 on package pin 1 */
+#define Encoders_Encoder_B1_PORT                                         (GPIOB)
+// pins affected by this interrupt request:["Encoder_B1","Encoder_B2"]
+#define Encoders_GPIOB_INT_IRQN                                 (GPIOB_INT_IRQn)
+#define Encoders_GPIOB_INT_IIDX                 (DL_INTERRUPT_GROUP1_IIDX_GPIOB)
+#define Encoders_Encoder_B1_IIDX                            (DL_GPIO_IIDX_DIO13)
+#define Encoders_Encoder_B1_PIN                                 (DL_GPIO_PIN_13)
+#define Encoders_Encoder_B1_IOMUX                                (IOMUX_PINCM30)
+/* Defines for Encoder_B2: GPIOB.14 with pinCMx 31 on package pin 2 */
+#define Encoders_Encoder_B2_PORT                                         (GPIOB)
+#define Encoders_Encoder_B2_IIDX                            (DL_GPIO_IIDX_DIO14)
+#define Encoders_Encoder_B2_PIN                                 (DL_GPIO_PIN_14)
+#define Encoders_Encoder_B2_IOMUX                                (IOMUX_PINCM31)
 
 
 /* clang-format on */
@@ -222,7 +288,10 @@ void SYSCFG_DL_GPIO_init(void);
 void SYSCFG_DL_SYSCTL_init(void);
 
 bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
+void SYSCFG_DL_PWM_A_init(void);
+void SYSCFG_DL_PWM_B_init(void);
 void SYSCFG_DL_TIMER_0_init(void);
+void SYSCFG_DL_TIMER_ENCODER_init(void);
 void SYSCFG_DL_OLED_init(void);
 void SYSCFG_DL_GY_87_init(void);
 void SYSCFG_DL_UART_0_init(void);

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    Grayscale.h
  * @brief   8 路灰度传感器驱动接口
  * @details 定义灰度传感器引脚、电平宏、加权表和函数声明
@@ -53,9 +53,37 @@ extern uint8_t Gray_6;
 extern uint8_t Gray_7;
 extern uint8_t Gray_8;   // 最左边灰度
 
-/* ===================== 函数声明 ===================== */
-void Gray_Sensor_Init(void);     // 初始化8路灰度传感器GPIO
-void Gray_Sensor_Read(void);     // 读取8路灰度传感器数据
-float Grayscale_GetDeviation(void); // 获取加权偏差值
+/* ===================== 基础速度（蓝牙可调） ===================== */
+extern uint16_t BaseSpeed;
+
+/* ===================== 拐弯状态机 ===================== */
+#define TURN_IDLE     0       // 正常循迹，PD微调
+#define TURN_DECEL    1       // 外侧触发，减速直行
+#define TURN_ACTIVE   2       // 差速拐弯
+
+/* ===================== 默认拐弯参数（蓝牙可调） ===================== */
+extern uint16_t TurnDecelTime;   // 减速时间（ms）
+extern uint16_t TurnPower;      // 拐弯差速力度
+extern uint16_t DecelSpeed;     // 减速入弯基础速度
+
+/* ===================== 摇杆转向灵敏度（蓝牙可调） ===================== */
+extern uint16_t JoyTurn;        // 摇杆转向倍率，默认15
+
+/* ===================== 循迹控制全局变量 ===================== */
+extern uint8_t RunFlag;              // 循迹运行标志
+extern int16_t PWML, PWMR;          // 左右电机当前PWM值
+extern uint8_t Turn_State;           // 拐弯状态机状态
+extern uint8_t Turn_Direction;       // 拐弯方向（1=左弯，2=右弯）
+
+/* ===================== 原始函数声明 ===================== */
+void Gray_Sensor_Init(void);        // 初始化8路灰度传感器GPIO
+void Gray_Sensor_Read(void);        // 读取8路灰度传感器数据
+float Grayscale_GetDeviation(void); // 获取加权偏差值（全部8路）
+
+/* ===================== 循迹控制函数声明 ===================== */
+void Gray_Track_Control(void);          // 灰度循迹控制主函数（三段式拐弯+PD差速）
+float Grayscale_GetDeviation_Track(void); // 获取循迹偏差（仅用中间6路传感器）
+void Gray_SoftStart_Tick(void);         // 软启动Tick（1ms中断中调用）
+void Gray_SoftStart_Reset(void);        // 重置软启动状态
 
 #endif
