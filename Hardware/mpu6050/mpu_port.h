@@ -34,5 +34,14 @@ void MPU_Tick(void);
 int DMP_Init(void);
 int DMP_Read_Data(float *pitch, float *roll, float *yaw);
 
+/* 应用层：自动校准 + 增量累积（供主循环调用） */
+extern uint8_t  mpu_ok;              /* MPU6050 初始化成功标志 */
+extern uint8_t  mpu_calibrated;      /* YAW 校准完成标志 */
+extern float    mpu_pitch;           /* 最新 Pitch（度） */
+extern float    mpu_roll;            /* 最新 Roll（度） */
+extern float    mpu_corrected_yaw;   /* 校准+补偿后的 YAW（度） */
+void MPU_Update(void);
+uint16_t MPU_GetCalibProgress(void); /* 校准进度 0~100% */
+
 #endif
 

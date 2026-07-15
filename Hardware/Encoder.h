@@ -67,4 +67,11 @@ void Encoder_CalcSpeed(void);
  */
 int16_t Encoder_GetSpeed(uint8_t n);
 
+/**
+ * @brief 获取从初始化开始的累计总脉冲数
+ * @param n 编码器编号：ENCODER_LEFT(1) 或 ENCODER_RIGHT(2)
+ * @return 累计脉冲总数（无符号累积，不因主循环周期而丢失）
+ */
+int32_t Encoder_GetTotalCount(uint8_t n);
+
 #endif

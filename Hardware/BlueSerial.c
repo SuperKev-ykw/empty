@@ -88,8 +88,31 @@ static uint16_t RingBuffer_GetCount(RingBuffer *rb)
 
 /* ==================== 串口 API ==================== */
 
+uint8_t BlueSerial_GetRxFlag(void)
+{
+    return BlueSerial_RxFlag;
+}
+
 void BlueSerial_Init(void)
 {
+    /* 清空 RX FIFO，丢弃上电后 FIFO 中已积累的脏数据 */
+    while (!DL_UART_isRXFIFOEmpty(UART_0_INST))
+    {
+        DL_UART_receiveData(UART_0_INST);
+    }
+
+    /* 检查并清除溢出/帧错误等错误标志（读取错误状态会自动丢弃对应数据） */
+    if (DL_UART_getErrorStatus(UART_0_INST, DL_UART_ERROR_OVERRUN | DL_UART_ERROR_FRAMING))
+    {
+        DL_UART_getErrorStatus(UART_0_INST, DL_UART_ERROR_OVERRUN | DL_UART_ERROR_FRAMING);
+    }
+
+    /* 额外使能溢出错误中断，防止 FIFO 溢出后卡死 */
+    DL_UART_enableInterrupt(UART_0_INST, DL_UART_INTERRUPT_OVERRUN_ERROR);
+
+    /* 清除 UART 中断状态寄存器 */
+    DL_UART_clearInterruptStatus(UART_0_INST, DL_UART_INTERRUPT_RX | DL_UART_INTERRUPT_OVERRUN_ERROR);
+
     NVIC_ClearPendingIRQ(UART_0_INST_INT_IRQN);
     NVIC_EnableIRQ(UART_0_INST_INT_IRQN);
 }
@@ -159,6 +182,13 @@ uint8_t BlueSerial_GetRxData(void)
 
 void UART_0_INST_IRQHandler(void)
 {
+    /* 检查错误标志（溢出/帧错误等），清除后丢弃数据 */
+    if (DL_UART_getErrorStatus(UART_0_INST, DL_UART_ERROR_OVERRUN))
+    {
+        DL_UART_clearInterruptStatus(UART_0_INST, DL_UART_INTERRUPT_OVERRUN_ERROR);
+        return;
+    }
+
     uint8_t RxData = DL_UART_receiveData(UART_0_INST);
 
     /* 原始字节写入环形缓冲区（供 0xAA 等协议解析） */
@@ -275,5 +305,23 @@ void BlueSerial_Tasks(void)
             Joystick_Active = 1;
         else
             Joystick_Active = 0;
+    }
+    /* ============ 启停指令（兼容江科大平衡车蓝牙控制） ============ */
+    else if (strcmp(Tag, "1") == 0)
+    {
+        if (RunFlag == 0)
+        {
+            RunFlag = 1;
+            Turn_State = TURN_IDLE;
+            Turn_Direction = 0;
+            Gray_SoftStart_Reset();
+        }
+    }
+    else if (strcmp(Tag, "0") == 0)
+    {
+        RunFlag = 0;
+        Motor_SetTargetSpeed(0, 0);
+        Gray_SoftStart_Reset();
+        Motor_Speed_PID_Reset();
     }
 }

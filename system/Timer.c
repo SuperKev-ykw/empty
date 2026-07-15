@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Timer.c
  * @brief   定时器驱动实现文件
  * @details 实现定时器中断计数功能
@@ -20,9 +20,11 @@
 #include "Timer.h"
 #include "key.h"
 #include "mpu6050/mpu_port.h"   /* MPU_Tick() */
-#include "Grayscale.h"          /* Gray_SoftStart_Tick(), RunFlag */
+#include "Grayscale.h"          /* RunFlag, SpeedRamp */
+#include "BlueSerial.h"         /* Joystick_Active */
 #include "Motor.h"              /* Motor_Speed_PID_Update() */
 #include "Encoder.h"            /* Encoder_CalcSpeed() */
+#include "F32C.h"               /* F32C_PollFeedback() */
 
 /* 定时器计数值定义 */
 volatile uint16_t Count0 = 0;
@@ -43,7 +45,7 @@ void Timer_Init(void)
  * @brief  定时器中断服务函数（1ms 周期）
  * @details 累加 Count0（ms 计数），每满 1000 次累加 Count1（秒计数），
  *          同时调用 Key_Tick() 进行按键扫描。
- *          每 1ms 调用 Gray_SoftStart_Tick() 用于循迹软启动。
+ *          每 10ms 执行 Gray_Track_Control() 灰度循迹。
  *          每 20ms 执行 Encoder_CalcSpeed() + Motor_Speed_PID_Update()。
  */
 void TIMER_0_INST_IRQHandler(void)
@@ -63,8 +65,16 @@ void TIMER_0_INST_IRQHandler(void)
         /* 系统滴答递增 */
         System_Tick_Count++;
 
-        /* 循迹软启动（每1ms步进计时） */
-        Gray_SoftStart_Tick();
+        /* 10ms调度：灰度循迹（更高频率提高拐弯响应速度） */
+        static uint16_t track_10ms_cnt = 0;
+        track_10ms_cnt++;
+        if (track_10ms_cnt >= 10)
+        {
+            track_10ms_cnt = 0;
+            /* 循迹控制（RunFlag=1 且非摇杆时才执行） */
+            if (RunFlag && !Joystick_Active)
+                Gray_Track_Control();
+        }
 
         /* 20ms调度：速度计算 + 内环速度PID */
         static uint16_t speed_pid_cnt = 0;
@@ -73,8 +83,11 @@ void TIMER_0_INST_IRQHandler(void)
         {
             speed_pid_cnt = 0;
             Encoder_CalcSpeed();
-            if (RunFlag)
+            if (RunFlag || Joystick_Active)
                 Motor_Speed_PID_Update();
+
+            // BlueSerial_Printf("[plot,%d]", Turn_State);//蓝牙发送运动状态
+            BlueSerial_Printf("[plot,%f]", mpu_corrected_yaw);//蓝牙发送 YAW 角度
         }
     }
 }

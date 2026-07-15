@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Grayscale.c
  * @brief   8 路灰度传感器驱动
  * @details 实现 8 路灰度传感器的数据读取和加权偏差计算
@@ -118,32 +118,22 @@ int16_t PWMR = 0;
 uint8_t Turn_State = TURN_IDLE;
 uint8_t Turn_Direction = 0;    /* 1=左弯，2=右弯 */
 
-/* ===================== 软启动参数 ===================== */
-#define SOFT_START_STEP      6
-#define SOFT_START_INTERVAL 50
+/* ===================== 通用速度斜坡实例 ===================== */
+static SpeedRamp_t soft_ramp;    /* 起步/出弯软启动：0 → BaseSpeed（300ms） */
+static SpeedRamp_t decel_ramp;   /* 转弯减速：当前速度 → DecelSpeed */
 
-static uint8_t  soft_start_active = 0;
-static int16_t  soft_current_speed = 0;
-static int16_t  soft_target_speed = 0;
-static uint16_t soft_start_counter = 0;
-static uint8_t  soft_was_running = 0;
-
-#define TURN_SOFT_START_STEP      5
-#define TURN_SOFT_START_INTERVAL  30
-
-static uint8_t  turn_soft_active = 0;
-static int16_t  turn_soft_current = 0;
-static uint16_t turn_soft_counter = 0;
+static uint8_t  soft_was_running = 0;  /* 上次 RunFlag 状态（上升沿检测） */
 
 /* ===================== 拐弯变量 ===================== */
-static uint32_t Turn_Start_Tick = 0;
+uint32_t Turn_Start_Tick = 0;
 
 /* ===================== 蓝牙可调参数（默认值） ===================== */
-uint16_t BaseSpeed = 20;  /* 默认值，蓝牙 [slider,BSp,xxx] 可在线修改 */
-uint16_t TurnDecelTime = 200;
-uint16_t TurnPower = 35;
-uint16_t DecelSpeed = 65;
-uint16_t JoyTurn = 15;     /* 摇杆转向倍率，蓝牙 [slider,JTurn,15] 可调 */
+uint16_t BaseSpeed = 20;     /* 直行基础速度 */
+uint16_t TurnDecelTime = 150;// 拐弯减速时间（ms），越大减速过程越慢，防止目标速度跳变导致电机刹车停顿
+uint16_t TurnPower = 10;     // 拐弯幅度=转弯时左右轮胎速度差的一半
+uint16_t DecelSpeed = 10;    // 拐弯前的减速速度
+uint16_t SoftStartTime = 300;/* 起步/出弯软启动加速时间（ms），越大加速越慢 */
+uint16_t JoyTurn = 10;       /* 摇杆转向倍率，蓝牙 [slider,JTurn,10] 可调 */
 
 /**
  * @brief  计算循迹偏差（仅用中间6路传感器 Gray_2~Gray_7）
@@ -196,80 +186,142 @@ void Gray_Track_Control(void)
         return;
     }
 
-//    /* ============ 拐弯状态机（暂注释，等PID调好再开） ============ */
-//    if (Turn_State == TURN_ACTIVE && ... ) { ... }
-//    if (Turn_State == TURN_IDLE && ... ) { ... }
-//    if (Turn_State == TURN_DECEL) { ... }
-//    else if (Turn_State == TURN_ACTIVE) { ... }
-//    else { ... PD循迹 ... }
-
     /* ============ RunFlag 上升沿检测：启动软启动 ============ */
     if (RunFlag && !soft_was_running)
     {
         soft_was_running = 1;
-        soft_target_speed = BaseSpeed;
-        soft_current_speed = 0;
-        soft_start_active = 1;
-        soft_start_counter = 0;
+        SpeedRamp_Start(&soft_ramp, 0, (int16_t)BaseSpeed, SoftStartTime);
     }
 
-    /* ============ 基本PD循迹（跳过拐弯状态机，仅用于PID调试） ============ */
-    float deviation = Grayscale_GetDeviation_Track();
-    int16_t speed = soft_start_active ? soft_current_speed : (int16_t)BaseSpeed;
-    Racecar((float)speed, deviation);
+    /* ============ 三段式拐弯状态机 ============ */
+
+    /* P1：优先执行转弯（退出检查在 TURN_ACTIVE 内部处理） */
+    if (Turn_State == TURN_DECEL)
+    {
+        /* 通用速度斜坡：从当前速度平滑降至 DecelSpeed */
+        int16_t speed = SpeedRamp_Update(&decel_ramp);
+        Motor_SetTargetSpeed(speed, speed);
+        if (!SpeedRamp_IsActive(&decel_ramp))
+            Turn_State = TURN_ACTIVE;
+    }
+    else if (Turn_State == TURN_ACTIVE)
+    {
+        /* 检查中间传感器是否重新捕获黑线 → 退出拐弯 */
+        if (Gray_3 == GRAY_BLACK || Gray_6 == GRAY_BLACK)
+        {
+            Turn_State = TURN_IDLE;
+            Turn_Direction = 0;
+            /* 退出拐弯后软启动，从 0 平滑加速回 BaseSpeed */
+            SpeedRamp_Start(&soft_ramp, 0, (int16_t)BaseSpeed, SoftStartTime);
+        }
+        else
+        {
+            /* 差速拐弯：左弯左停右转，右弯右停左转 */
+            if (Turn_Direction == 1)
+                Motor_SetTargetSpeed(0, (int16_t)TurnPower);
+            else
+                Motor_SetTargetSpeed((int16_t)TurnPower, 0);
+        }
+    }
+    else if (Turn_State == TURN_IDLE)
+    {
+        /* 检测拐弯触发：最外侧灰度检测到黑线 */
+        /* Gray_8(最左)→线偏左→需左转; Gray_1(最右)→线偏右→需右转 */
+        if (Gray_8 == GRAY_BLACK)
+        {
+            Turn_Direction = 1;  /* 左弯 */
+            Turn_State = TURN_DECEL;
+            Turn_Start_Tick = System_Tick_Count;
+            int16_t avg_speed = (int16_t)((motor_l_ctrl.target_speed + motor_r_ctrl.target_speed) / 2);
+            SpeedRamp_Start(&decel_ramp, avg_speed, (int16_t)DecelSpeed, TurnDecelTime);
+        }
+        else if (Gray_1 == GRAY_BLACK)
+        {
+            Turn_Direction = 2;  /* 右弯 */
+            Turn_State = TURN_DECEL;
+            Turn_Start_Tick = System_Tick_Count;
+            int16_t avg_speed = (int16_t)((motor_l_ctrl.target_speed + motor_r_ctrl.target_speed) / 2);
+            SpeedRamp_Start(&decel_ramp, avg_speed, (int16_t)DecelSpeed, TurnDecelTime);
+        }
+        else
+        {
+            /* 未触发 → 正常 PD 循迹 */
+            float deviation = Grayscale_GetDeviation_Track();
+            int16_t speed = SpeedRamp_IsActive(&soft_ramp) ? SpeedRamp_Update(&soft_ramp) : (int16_t)BaseSpeed;
+            Racecar((float)speed, deviation);
+        }
+    }
 
     /* ---- 更新用于显示的 PWM 值 ---- */
     PWML = (int16_t)motor_l_ctrl.target_speed;
     PWMR = (int16_t)motor_r_ctrl.target_speed;
 }
 
+/* ===================== 通用速度斜坡函数实现 ===================== */
+
 /**
- * @brief   软启动 Tick 函数（1ms 中断中调用）
- * @details 每 SOFT_START_INTERVAL(50ms) 增加一次速度，
- *          直到达到目标速度 BaseSpeed。
- *          同时处理拐弯软启动：每 TURN_SOFT_START_INTERVAL(30ms) 增加。
+ * @brief  启动速度斜坡
+ * @param ramp  斜坡实例指针
+ * @param from  起始速度
+ * @param to    目标速度
+ * @param duration_ms  过渡时长(ms)
  */
-void Gray_SoftStart_Tick(void)
+void SpeedRamp_Start(SpeedRamp_t *ramp, int16_t from, int16_t to, uint32_t duration_ms)
 {
-    if (soft_start_active)
+    ramp->start_val  = from;
+    ramp->target_val = to;
+    ramp->start_tick = System_Tick_Count;
+    ramp->duration   = duration_ms;
+    ramp->active     = 1;
+}
+
+/**
+ * @brief  更新速度斜坡，返回当前速度
+ * @param ramp  斜坡实例指针
+ * @return 当前插值速度；斜坡完成后固定返回目标值
+ */
+int16_t SpeedRamp_Update(SpeedRamp_t *ramp)
+{
+    if (!ramp->active)
+        return ramp->target_val;
+
+    uint32_t elapsed = System_Tick_Count - ramp->start_tick;
+    if (elapsed >= ramp->duration)
     {
-        soft_start_counter++;
-        if (soft_start_counter >= SOFT_START_INTERVAL)
-        {
-            soft_start_counter = 0;
-            soft_current_speed += SOFT_START_STEP;
-            if (soft_current_speed >= soft_target_speed)
-            {
-                soft_current_speed = soft_target_speed;
-                soft_start_active = 0;
-            }
-        }
+        ramp->active = 0;
+        return ramp->target_val;
     }
 
-    if (turn_soft_active)
-    {
-        turn_soft_counter++;
-        if (turn_soft_counter >= TURN_SOFT_START_INTERVAL)
-        {
-            turn_soft_counter = 0;
-            turn_soft_current += TURN_SOFT_START_STEP;
-            if (turn_soft_current >= TurnPower)
-            {
-                turn_soft_current = TurnPower;
-                turn_soft_active = 0;
-            }
-        }
-    }
+    /* 线性插值：start_val → target_val */
+    float ratio = (float)elapsed / ramp->duration;
+    return ramp->start_val + (int16_t)((ramp->target_val - ramp->start_val) * ratio);
+}
+
+/**
+ * @brief  查询斜坡是否仍在过渡中
+ * @param ramp  斜坡实例指针
+ * @retval 1=仍在过渡，0=已完成
+ */
+uint8_t SpeedRamp_IsActive(SpeedRamp_t *ramp)
+{
+    return ramp->active;
+}
+
+/**
+ * @brief  强制结束斜坡（后续 Update 直接返回目标值）
+ */
+void SpeedRamp_Stop(SpeedRamp_t *ramp)
+{
+    ramp->active = 0;
 }
 
 /**
  * @brief   重置软启动状态（按键停止时调用）
+ * @note    兼容旧接口，内部使用 SpeedRamp_Stop
  */
 void Gray_SoftStart_Reset(void)
 {
     soft_was_running = 0;
-    soft_start_active = 0;
-    soft_current_speed = 0;
-    soft_start_counter = 0;
-    turn_soft_active = 0;
+    SpeedRamp_Stop(&soft_ramp);
+    SpeedRamp_Stop(&decel_ramp);
 }

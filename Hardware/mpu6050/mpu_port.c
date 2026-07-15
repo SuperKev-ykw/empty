@@ -195,3 +195,103 @@ int DMP_Read_Data(float *pitch, float *roll, float *yaw) {
     }
     return -1; 
 }
+
+/* ===================== 应用层：自动校准 + 增量累积 ===================== */
+
+/* 陀螺仪比例补偿 */
+#define GYRO_SCALE_CORR    (362.0f / 360.0f)   /* 1.006 */
+
+uint8_t  mpu_ok           = 0;
+uint8_t  mpu_calibrated   = 0;
+float    mpu_pitch        = 0.0f;
+float    mpu_roll         = 0.0f;
+float    mpu_corrected_yaw= 0.0f;
+
+static float    mpu_yaw_offset   = 0.0f;   /* YAW 零偏 */
+static float    mpu_yaw_last     = 0.0f;   /* 上一帧原始 YAW（用于校准检测） */
+static float    mpu_raw_yaw_prev = 0.0f;   /* 上一帧去零偏 YAW（用于增量） */
+static uint16_t mpu_stable_cnt   = 0;      /* 漂移稳定计数 */
+
+/**
+ * @brief  把单帧 YAW 增量累加到 mpu_corrected_yaw（处理 ±180° 跨边界）
+ */
+static void MPU_Yaw_Accumulate(float raw)
+{
+    float delta = raw - mpu_raw_yaw_prev;
+    mpu_raw_yaw_prev = raw;
+
+    if (delta > 180.0f)  delta -= 360.0f;
+    if (delta < -180.0f) delta += 360.0f;
+
+    mpu_corrected_yaw += delta * GYRO_SCALE_CORR;
+
+    if (mpu_corrected_yaw >  180.0f) mpu_corrected_yaw -= 360.0f;
+    if (mpu_corrected_yaw < -180.0f) mpu_corrected_yaw += 360.0f;
+}
+
+/**
+ * @brief  MPU6050 更新函数：读取 DMP + 自动校准 + 增量累积
+ * @note   排空 FIFO 里所有帧，每帧都累加一次角度增量。
+ *         无论主循环快慢，单位时间内的角度变化都能被正确捕获。
+ */
+void MPU_Update(void)
+{
+    float pitch = 0.0f, roll = 0.0f, yaw = 0.0f;
+
+    /* 1) 校准阶段：只检测漂移，不更新姿态 */
+    if (!mpu_calibrated)
+    {
+        if (DMP_Read_Data(&pitch, &roll, &yaw) != 0)
+            return;
+
+        mpu_pitch = pitch;
+        mpu_roll  = roll;
+
+        float drift = yaw - mpu_yaw_last;
+        mpu_yaw_last = yaw;
+        if (drift < 0.0f) drift = -drift;
+        if (drift < 0.1f)
+            mpu_stable_cnt++;
+        else
+            mpu_stable_cnt = 0;
+
+        if (mpu_stable_cnt >= 50)   /* 连续 500ms 漂移 < 0.1° */
+        {
+            mpu_yaw_offset     = yaw;
+            mpu_raw_yaw_prev   = 0.0f;
+            mpu_corrected_yaw  = 0.0f;
+            mpu_calibrated     = 1;
+        }
+        return;
+    }
+
+    /* 2) 校准完成：排空 FIFO，每帧都做增量累加 */
+    int got_any = 0;
+    while (1)
+    {
+        if (DMP_Read_Data(&pitch, &roll, &yaw) != 0)
+            break;  /* FIFO 空，退出循环 */
+
+        mpu_pitch = pitch;
+        mpu_roll  = roll;
+
+        float raw = yaw - mpu_yaw_offset;
+        MPU_Yaw_Accumulate(raw);
+        got_any = 1;
+    }
+
+    /* 一次主循环都没有读到数据 → 重置基准，避免下次 delta 跳变 */
+    if (!got_any)
+    {
+        mpu_raw_yaw_prev = yaw - mpu_yaw_offset;
+    }
+}
+
+/**
+ * @brief  获取 YAW 自动校准进度
+ * @return 0~100（达到 100 时校准完成）
+ */
+uint16_t MPU_GetCalibProgress(void)
+{
+    return mpu_stable_cnt * 2;
+}

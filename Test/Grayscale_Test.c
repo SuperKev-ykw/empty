@@ -1,74 +1,78 @@
-// /**
-//  * @file    Grayscale_Test.c
-//  * @brief   灰度传感器测试程序（参考示例）
-//  * @details 读取 8 路灰度传感器状态，在 OLED 上实时显示
-//  *          OLED 显示格式：
-//  *            Gray:10100101
-//  *            Dev: 0.00
-//  *          最左边数值对应最左边灰度(Gray_8)，最右边数值对应最右边灰度(Gray_1)
-//  *          1=检测到黑线，0=检测到白底
-//  *
-//  * 测试对象：
-//  *   - 8 路灰度传感器（Hardware/Grayscale.c）
-//  *   - OLED 字符串格式化显示
-//  *
-//  * 结果现象：
-//  *   - OLED 持续显示 8 路灰度状态（"Gray:xxxxxxxx"）+ 偏差值（"Dev:±x.xx"）
-//  *   - 当传感器压在黑线上时对应位为 1
-//  *   - 全白时 Dev=0（全白离线）
-//  *
-//  * 注意：本文件当前完全注释掉，仅作为 API 使用示例参考。
-//  */
+﻿#if 0
 
-// /**
-//  * @file    Grayscale_Test.c
-//  * @brief   灰度传感器测试程序
-//  * @details 读取8路灰度传感器状态，在OLED上实时显示
-//  *          OLED显示格式：
-//  *            Gray:10100101
-//  *            Dev: 0.00
-//  *          最左边数值对应最左边灰度(Gray_8)，最右边数值对应最右边灰度(Gray_1)
-//  *          1=检测到黑线，0=检测到白底
-//  */
+/**
+ * @file    Grayscale_Test.c
+ * @brief   灰度传感器测试程序（参考示例）
+ * @details 读取 8 路灰度传感器状态，在 OLED 上实时显示
+ *          OLED 显示格式：
+ *            Gray:10100101
+ *            Dev: 0.00
+ *          最左边数值对应最左边灰度(Gray_8)，最右边数值对应最右边灰度(Gray_1)
+ *          1=检测到黑线，0=检测到白底
+ *
+ * 测试对象：
+ *   - 8 路灰度传感器（Hardware/Grayscale.c）
+ *   - OLED 字符串格式化显示
+ *
+ * 结果现象：
+ *   - OLED 持续显示 8 路灰度状态（"Gray:xxxxxxxx"）+ 偏差值（"Dev:±x.xx"）
+ *   - 当传感器压在黑线上时对应位为 1
+ *   - 全白时 Dev=0（全白离线）
+ *
+ * 注意：本文件当前完全注释掉，仅作为 API 使用示例参考。
+ */
 
-// #include "ti_msp_dl_config.h"
-// #include "delay.h"
-// #include "oled.h"
-// #include "Grayscale.h"
+/**
+ * @file    Grayscale_Test.c
+ * @brief   灰度传感器测试程序
+ * @details 读取8路灰度传感器状态，在OLED上实时显示
+ *          OLED显示格式：
+ *            Gray:10100101
+ *            Dev: 0.00
+ *          最左边数值对应最左边灰度(Gray_8)，最右边数值对应最右边灰度(Gray_1)
+ *          1=检测到黑线，0=检测到白底
+ */
 
-// int main(void)
-// {
-//     SYSCFG_DL_init();
+#include "ti_msp_dl_config.h"
+#include "delay.h"
+#include "oled.h"
+#include "Grayscale.h"
 
-//     OLED_Init();
-//     OLED_ColorTurn(0);
-//     OLED_DisplayTurn(0);
-//     OLED_Clear();
+int main(void)
+{
+    SYSCFG_DL_init();
 
-//     /* 初始化灰度传感器（SysConfig 已配置 GPIO，此调用仅为保持接口一致） */
-//     Gray_Sensor_Init();
+    OLED_Init();
+    OLED_ColorTurn(0);
+    OLED_DisplayTurn(0);
+    OLED_Clear();
 
-//     while (1)
-//     {
-//         /* 读取8路灰度传感器 */
-//         Gray_Sensor_Read();
+    /* 初始化灰度传感器（SysConfig 已配置 GPIO，此调用仅为保持接口一致） */
+    Gray_Sensor_Init();
 
-//         /* 计算加权偏差值 */
-//         float deviation = Grayscale_GetDeviation();
+    while (1)
+    {
+        /* 读取8路灰度传感器 */
+        Gray_Sensor_Read();
 
-//         /* 在OLED上显示灰度状态
-//          * 第一行：显示8路灰度状态，从左到右：Gray_8 ~ Gray_1
-//          * 第二行：显示偏差值
-//          * 即最左边数值 = 最左边灰度状态，最右边数值 = 最右边灰度状态
-//          */
-//         OLED_Printf(0, 0, 16, "Gray:%d%d%d%d%d%d%d%d",
-//             Gray_8, Gray_7, Gray_6, Gray_5,
-//             Gray_4, Gray_3, Gray_2, Gray_1);
-//         OLED_Printf(0, 16, 16, "Dev:%+5.2f", deviation);
+        /* 计算加权偏差值 */
+        float deviation = Grayscale_GetDeviation();
 
-//         /* 刷新OLED显示 */
-//         OLED_Refresh();
+        /* 在OLED上显示灰度状态
+         * 第一行：显示8路灰度状态，从左到右：Gray_8 ~ Gray_1
+         * 第二行：显示偏差值
+         * 即最左边数值 = 最左边灰度状态，最右边数值 = 最右边灰度状态
+         */
+        OLED_Printf(0, 0, 16, "Gray:%d%d%d%d%d%d%d%d",
+            Gray_8, Gray_7, Gray_6, Gray_5,
+            Gray_4, Gray_3, Gray_2, Gray_1);
+        OLED_Printf(0, 16, 16, "Dev:%+5.2f", deviation);
 
-//         delay_ms(50);
-//     }
-// }
+        /* 刷新OLED显示 */
+        OLED_Refresh();
+
+        delay_ms(50);
+    }
+}
+
+#endif

@@ -652,6 +652,8 @@ SYSCONFIG_WEAK void SYSCFG_DL_UART_1_init(void)
     /* Configure Interrupts */
     DL_UART_Main_enableInterrupt(UART_1_INST,
                                  DL_UART_MAIN_INTERRUPT_RX);
+    /* Setting the Interrupt Priority */
+    NVIC_SetPriority(UART_1_INST_INT_IRQN, 1);
 
 
     DL_UART_Main_enable(UART_1_INST);

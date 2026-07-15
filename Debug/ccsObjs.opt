@@ -17,7 +17,6 @@
 "./Hardware/mpu6050/mpu_port.o"
 "./Test/BlueCar.o"
 "./Test/BlueSerial_Test.o"
-"./Test/GY_87_Test.o"
 "./Test/Gimbal_Test.o"
 "./Test/Grayscale_Test.o"
 "./Test/MPU6050_Test.o"

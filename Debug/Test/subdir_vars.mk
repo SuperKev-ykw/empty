@@ -8,7 +8,6 @@ SHELL = cmd.exe
 C_SRCS += \
 ../Test/BlueCar.c \
 ../Test/BlueSerial_Test.c \
-../Test/GY_87_Test.c \
 ../Test/Gimbal_Test.c \
 ../Test/Grayscale_Test.c \
 ../Test/MPU6050_Test.c \
@@ -21,7 +20,6 @@ C_SRCS += \
 C_DEPS += \
 ./Test/BlueCar.d \
 ./Test/BlueSerial_Test.d \
-./Test/GY_87_Test.d \
 ./Test/Gimbal_Test.d \
 ./Test/Grayscale_Test.d \
 ./Test/MPU6050_Test.d \
@@ -34,7 +32,6 @@ C_DEPS += \
 OBJS += \
 ./Test/BlueCar.o \
 ./Test/BlueSerial_Test.o \
-./Test/GY_87_Test.o \
 ./Test/Gimbal_Test.o \
 ./Test/Grayscale_Test.o \
 ./Test/MPU6050_Test.o \
@@ -47,7 +44,6 @@ OBJS += \
 OBJS__QUOTED += \
 "Test\BlueCar.o" \
 "Test\BlueSerial_Test.o" \
-"Test\GY_87_Test.o" \
 "Test\Gimbal_Test.o" \
 "Test\Grayscale_Test.o" \
 "Test\MPU6050_Test.o" \
@@ -60,7 +56,6 @@ OBJS__QUOTED += \
 C_DEPS__QUOTED += \
 "Test\BlueCar.d" \
 "Test\BlueSerial_Test.d" \
-"Test\GY_87_Test.d" \
 "Test\Gimbal_Test.d" \
 "Test\Grayscale_Test.d" \
 "Test\MPU6050_Test.d" \
@@ -73,7 +68,6 @@ C_DEPS__QUOTED += \
 C_SRCS__QUOTED += \
 "../Test/BlueCar.c" \
 "../Test/BlueSerial_Test.c" \
-"../Test/GY_87_Test.c" \
 "../Test/Gimbal_Test.c" \
 "../Test/Grayscale_Test.c" \
 "../Test/MPU6050_Test.c" \

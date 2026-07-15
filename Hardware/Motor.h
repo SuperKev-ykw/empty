@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Motor.h
  * @brief   AT8236 直流电机驱动头文件
  * @details 驱动两路 AT8236 H 桥芯片，控制左右直流减速电机。
@@ -113,5 +113,35 @@ void Motor_Stop(uint8_t n, uint8_t mode);
  * @param mode 停机模式：MOTOR_COAST(自由滑行) 或 MOTOR_BRAKE(短路刹车)
  */
 void Motor_StopAll(uint8_t mode);
+
+/* ==================== 距离计算 ==================== */
+
+/** @brief 每次脉冲对应的距离（mm），由物理参数自动计算 */
+extern const float Motor_Distance_Per_Pulse;
+
+/**
+ * @brief  根据编码器脉冲数计算行走距离（mm）
+ * @param  pulse 编码器脉冲数（正=前进，负=后退）
+ * @return 距离（mm）
+ */
+float Motor_PulseToDistance(int16_t pulse);
+
+/**
+ * @brief  累加左右轮平均行走距离
+ * @param  left_pulse  左编码器脉冲数（Encoder_GetCount(ENCODER_LEFT)）
+ * @param  right_pulse 右编码器脉冲数（Encoder_GetCount(ENCODER_RIGHT)）
+ * @note   在主循环中每帧调用，自动累加行走总距离
+ */
+void Motor_AddDistance(int16_t left_pulse, int16_t right_pulse);
+
+/**
+ * @brief  获取累加行走总距离（mm）
+ */
+float Motor_GetDistance(void);
+
+/**
+ * @brief  重置累加距离为 0
+ */
+void Motor_ResetDistance(void);
 
 #endif

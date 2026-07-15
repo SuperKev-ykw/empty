@@ -37,6 +37,7 @@
 
 #include "ti_msp_dl_config.h"
 #include "Serial.h"
+#include "F32C.h"               /* 用于 ISR 中直接解析 F32C 反馈帧 */
 
 /* ==================== 环形缓冲区实现 ==================== */
 
@@ -54,6 +55,15 @@ static RingBuffer rxBuffer = {
     .tail = 0,
     .count = 0
 };
+
+/* ---- ISR 帧解析调试计数 ---- */
+volatile uint32_t uart1_isr_count = 0;      /* UART1 ISR 进入次数（供 OLED 显示） */
+volatile uint32_t dbg_rx_total = 0;
+volatile uint32_t dbg_frame_header = 0;
+volatile uint32_t dbg_frame_full = 0;
+volatile uint32_t dbg_tail_err = 0;
+volatile uint32_t dbg_bcc_err = 0;
+volatile uint32_t dbg_frame_ok = 0;
 
 /**
  * @brief  向环形缓冲区写入一个字节（在中断中调用）
@@ -104,7 +114,13 @@ static uint16_t RingBuffer_GetCount(RingBuffer *rb)
  */
 void Serial_Init(void)
 {
+    /* 参考工程：SysConfig 设置优先级0，Serial_Init 只清pending + 使能NVIC，不改优先级 */
     NVIC_ClearPendingIRQ(UART_1_INST_INT_IRQN);
+
+    /* 设置RX FIFO阈值为1字节，确保每收到一字节都触发中断（参考工程有此设置） */
+    DL_UART_setRXFIFOThreshold(UART_1_INST, DL_UART_RX_FIFO_LEVEL_ONE_ENTRY);
+
+    /* 不调用 NVIC_SetPriority，保持 SysConfig 设定的优先级 0（与参考工程一致） */
     NVIC_EnableIRQ(UART_1_INST_INT_IRQN);
 }
 
@@ -195,14 +211,96 @@ uint8_t Serial_GetRxData(void)
 
 /**
  * @brief  UART1 接收中断服务函数
- * @note   SysConfig 生成的宏 UART_1_INST_IRQHandler 展开为 UART1_IRQHandler
- *         当接收到数据时，将数据写入环形缓冲区
+ * @note   排空 RX FIFO 并解析 F32C 9 字节反馈帧（协议与参考工程一致）：
+ *           0x7A ADDR TYPE DATA4 BCC 0x7B
+ *         ADDR=1/2 → TYPE=0x01(角度) / 0x00(速度)
+ *         解析结果直接更新 motor{1,2}_{current_position,current_speed}
  */
-void UART_1_INST_IRQHandler(void)
+void UART1_IRQHandler(void)
 {
-    /* 读取接收到的数据（读取操作自动清除中断标志） */
-    uint8_t received = DL_UART_receiveData(UART_1_INST);
+    uart1_isr_count++;  /* 放在最开头，判断 ISR 是否被进入 */
 
-    /* 写入环形缓冲区 */
-    RingBuffer_Write(&rxBuffer, received);
+    /* 确认中断来源并清除 UART 外设中断标志 */
+    if (DL_UART_Main_getPendingInterrupt(UART_1_INST) != DL_UART_MAIN_IIDX_RX)
+        return;
+
+    static uint8_t rx_buf[9];
+    static uint8_t rx_idx = 0;
+
+    /* 排空 RX FIFO */
+    while (!DL_UART_Main_isRXFIFOEmpty(UART_1_INST))
+    {
+        uart1_isr_count++;
+        uint8_t byte = DL_UART_Main_receiveData(UART_1_INST);
+        dbg_rx_total++;
+
+        /* 写入环形缓冲区（供 Serial_GetRxData() / Serial_GetRxCount() 读取） */
+        RingBuffer_Write(&rxBuffer, byte);
+
+        /* ── F32C 帧同步状态机 ── */
+
+        /* 等待帧头 0x7A */
+        if (rx_idx == 0)
+        {
+            if (byte != 0x7A)
+                continue;
+            dbg_frame_header++;
+            rx_buf[0] = byte;
+            rx_idx = 1;
+            continue;
+        }
+
+        /* 收集第 2~9 字节 */
+        rx_buf[rx_idx++] = byte;
+
+        if (rx_idx < 9)
+            continue;
+
+        /* ──── 已收满 9 字节，复位索引 ──── */
+        rx_idx = 0;
+        dbg_frame_full++;
+
+        /* 1) 校验帧尾 */
+        if (rx_buf[8] != 0x7B)
+        {
+            dbg_tail_err++;
+            continue;
+        }
+
+        /* 2) BCC 校验：前 7 字节 XOR */
+        uint8_t bcc = 0;
+        for (uint8_t i = 0; i < 7; i++)
+            bcc ^= rx_buf[i];
+        if (bcc != rx_buf[7])
+        {
+            dbg_bcc_err++;
+            continue;
+        }
+
+        /* 3) 提取 4 字节大端有符号整数 */
+        int32_t value = (int32_t)(((uint32_t)rx_buf[3] << 24) |
+                                  ((uint32_t)rx_buf[4] << 16) |
+                                  ((uint32_t)rx_buf[5] << 8)  |
+                                  ((uint32_t)rx_buf[6]));
+
+        uint8_t addr = rx_buf[1];
+        uint8_t type = rx_buf[2];
+
+        /* 4) 按地址和类型更新全局变量 */
+        if (addr == MOTOR1_ID)
+        {
+            if (type == FB_MULTI_ANGLE)
+                motor1_current_position = value;
+            else if (type == FB_SPEED)
+                motor1_current_speed = value;
+        }
+        else if (addr == MOTOR2_ID)
+        {
+            if (type == FB_MULTI_ANGLE)
+                motor2_current_position = value;
+            else if (type == FB_SPEED)
+                motor2_current_speed = value;
+        }
+        dbg_frame_ok++;
+    }
 }

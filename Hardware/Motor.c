@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Motor.c
  * @brief   AT8236 直流电机驱动实现
  * @details 通过硬件 PWM + GPIO 方向引脚驱动两路 AT8236 H 桥芯片。
@@ -181,15 +181,15 @@ Motor_Speed_t motor_r_ctrl = {0};
  * @brief  控制电机实际速度跟踪目标速度（PWM范围0~8000）
  * @note   PWM范围(0~8000)是参考STM32(0~1000)的8倍，参数已对应缩放8倍
  */
-float Motor_Kp = 120.0f;
-float Motor_Ki = 4.0f;
-float Motor_Kd = 0.0f;
+float Motor_Kp = 130.0f;
+float Motor_Ki = 20.0f;
+float Motor_Kd = 15.0f;
 
 /**
  * @name   位置环PD参数（外环）
  * @brief  根据灰度偏差计算差速目标
  */
-float Track_Kp = 5.0f;
+float Track_Kp = 1.0f;
 float Track_Kd = 0.0f;
 
 static float last_deviation = 0;
@@ -298,4 +298,40 @@ void Racecar(float base_speed, float deviation)
     int16_t target_r = (int16_t)(base_speed - value);
 
     Motor_SetTargetSpeed(target_l, target_r);
+}
+
+/* ==================== 距离计算 ==================== */
+
+/*
+ * 物理参数：
+ *   编码器 PPR = 13（GPIO 上升沿触发，二倍频 → 26 counts/轴转一圈）
+ *   减速比 = 28 : 1
+ *   轮径 = 68 mm
+ *
+ *   每脉冲距离 = π × 68 / (28 × 26) ≈ 0.2934 mm
+ */
+const float Motor_Distance_Per_Pulse = 3.14159265f * 68.0f / (28.0f * 26.0f);
+
+/** 累加总距离（mm） */
+static float g_total_distance_mm = 0.0f;
+
+float Motor_PulseToDistance(int16_t pulse)
+{
+    return (float)pulse * Motor_Distance_Per_Pulse;
+}
+
+void Motor_AddDistance(int16_t left_pulse, int16_t right_pulse)
+{
+    /* 左右轮脉冲平均值换算为车体中心总里程 */
+    g_total_distance_mm += ((float)left_pulse + (float)right_pulse) / 2.0f * Motor_Distance_Per_Pulse;
+}
+
+float Motor_GetDistance(void)
+{
+    return g_total_distance_mm;
+}
+
+void Motor_ResetDistance(void)
+{
+    g_total_distance_mm = 0.0f;
 }

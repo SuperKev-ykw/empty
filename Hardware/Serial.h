@@ -88,9 +88,23 @@ void Serial_Printf(char *format, ...);
 uint16_t Serial_GetRxCount(void);
 
 /**
+ * @brief  获取接收缓冲区中的数据量（调试用）
+ */
+uint16_t Serial_GetRxBufCount(void);
+
+/**
  * @brief  从环形缓冲区读取一个字节
  * @return 读取到的字节（缓冲区为空时返回 0）
  */
 uint8_t Serial_GetRxData(void);
+
+/* ---- ISR 帧解析调试计数 ---- */
+extern volatile uint32_t uart1_isr_count;   /* UART1 ISR 进入次数 */
+extern volatile uint32_t dbg_rx_total;      /* ISR 收到的总字节数 */
+extern volatile uint32_t dbg_frame_header;  /* 找到帧头 0x7A 的次数 */
+extern volatile uint32_t dbg_frame_full;    /* 收满 9 字节的次数 */
+extern volatile uint32_t dbg_tail_err;      /* 帧尾 0x7B 校验失败 */
+extern volatile uint32_t dbg_bcc_err;       /* BCC 校验失败 */
+extern volatile uint32_t dbg_frame_ok;      /* 解析成功次数 */
 
 #endif

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    oled.c
  * @brief   OLED 显示屏驱动实现（SSD1306 0.96 寸 128x64，硬件 I2C）
  * @details 通过 MSPM0G3507 硬件 I2C 与 OLED 通信
@@ -86,8 +86,10 @@ void OLED_WR_Byte(uint8_t dat, uint8_t mode)
     txData[0] = mode ? 0x40 : 0x00; 
     txData[1] = dat;
 
-    // 1. 等待 I2C 空闲（确保 FIFO 可写）
-    while (!(DL_I2C_getControllerStatus(OLED_INST) & DL_I2C_CONTROLLER_STATUS_IDLE));
+    // 1. 等待 I2C 空闲（确保 FIFO 可写），超时保护 10ms
+    uint32_t _i2c_to = 40000;
+    while (!(DL_I2C_getControllerStatus(OLED_INST) & DL_I2C_CONTROLLER_STATUS_IDLE) && _i2c_to--);
+    if (_i2c_to == 0) { DL_I2C_resetControllerTransfer(OLED_INST); return; }
     
     // 2. 将 2 个字节填入发送 FIFO
     DL_I2C_fillControllerTXFIFO(OLED_INST, txData, 2);
@@ -105,8 +107,10 @@ static void OLED_WriteData_Bulk(const uint8_t *data, uint8_t len)
         txData[0] = 0x40;  // 数据模式
         txData[1] = data[i];
         
-        // 等待 I2C 空闲
-        while (!(DL_I2C_getControllerStatus(OLED_INST) & DL_I2C_CONTROLLER_STATUS_IDLE));
+        // 等待 I2C 空闲，超时保护
+        uint32_t _i2c_to2 = 40000;
+        while (!(DL_I2C_getControllerStatus(OLED_INST) & DL_I2C_CONTROLLER_STATUS_IDLE) && _i2c_to2--);
+        if (_i2c_to2 == 0) { DL_I2C_resetControllerTransfer(OLED_INST); return; }
         
         // 填入 FIFO 并启动传输
         DL_I2C_fillControllerTXFIFO(OLED_INST, txData, 2);

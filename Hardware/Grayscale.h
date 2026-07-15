@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Grayscale.h
  * @brief   8 路灰度传感器驱动接口
  * @details 定义灰度传感器引脚、电平宏、加权表和函数声明
@@ -65,15 +65,31 @@ extern uint16_t BaseSpeed;
 extern uint16_t TurnDecelTime;   // 减速时间（ms）
 extern uint16_t TurnPower;      // 拐弯差速力度
 extern uint16_t DecelSpeed;     // 减速入弯基础速度
+extern uint16_t SoftStartTime;  // 起步/出弯软启动加速时间（ms）
 
 /* ===================== 摇杆转向灵敏度（蓝牙可调） ===================== */
 extern uint16_t JoyTurn;        // 摇杆转向倍率，默认15
+
+/* ===================== 通用速度斜坡结构体 ===================== */
+typedef struct {
+    int16_t  start_val;      /* 起始速度 */
+    int16_t  target_val;     /* 目标速度 */
+    uint32_t start_tick;     /* 开始时刻(System_Tick_Count) */
+    uint32_t duration;       /* 过渡时长(ms) */
+    uint8_t  active;         /* 1=正在过渡中 */
+} SpeedRamp_t;
+
+void SpeedRamp_Start(SpeedRamp_t *ramp, int16_t from, int16_t to, uint32_t duration_ms);
+int16_t SpeedRamp_Update(SpeedRamp_t *ramp);   /* 返回当前速度，完成后返回目标值 */
+uint8_t SpeedRamp_IsActive(SpeedRamp_t *ramp); /* 查询是否仍在过渡中 */
+void SpeedRamp_Stop(SpeedRamp_t *ramp);         /* 强制结束斜坡 */
 
 /* ===================== 循迹控制全局变量 ===================== */
 extern uint8_t RunFlag;              // 循迹运行标志
 extern int16_t PWML, PWMR;          // 左右电机当前PWM值
 extern uint8_t Turn_State;           // 拐弯状态机状态
 extern uint8_t Turn_Direction;       // 拐弯方向（1=左弯，2=右弯）
+extern uint32_t Turn_Start_Tick;     // 拐弯触发时刻的系统滴答值
 
 /* ===================== 原始函数声明 ===================== */
 void Gray_Sensor_Init(void);        // 初始化8路灰度传感器GPIO
@@ -83,7 +99,6 @@ float Grayscale_GetDeviation(void); // 获取加权偏差值（全部8路）
 /* ===================== 循迹控制函数声明 ===================== */
 void Gray_Track_Control(void);          // 灰度循迹控制主函数（三段式拐弯+PD差速）
 float Grayscale_GetDeviation_Track(void); // 获取循迹偏差（仅用中间6路传感器）
-void Gray_SoftStart_Tick(void);         // 软启动Tick（1ms中断中调用）
-void Gray_SoftStart_Reset(void);        // 重置软启动状态
+void Gray_SoftStart_Reset(void);        // 重置软启动状态（兼容旧接口）
 
 #endif
