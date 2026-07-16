@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    mpu_port.c
  * @brief   MPU6050 DMP 移植层实现
  * @details 实现 inv_mpu.c 所需的 I2C 读写函数，并封装 DMP_Init / DMP_Read_Data
@@ -266,7 +266,6 @@ void MPU_Update(void)
     }
 
     /* 2) 校准完成：排空 FIFO，每帧都做增量累加 */
-    int got_any = 0;
     while (1)
     {
         if (DMP_Read_Data(&pitch, &roll, &yaw) != 0)
@@ -277,13 +276,6 @@ void MPU_Update(void)
 
         float raw = yaw - mpu_yaw_offset;
         MPU_Yaw_Accumulate(raw);
-        got_any = 1;
-    }
-
-    /* 一次主循环都没有读到数据 → 重置基准，避免下次 delta 跳变 */
-    if (!got_any)
-    {
-        mpu_raw_yaw_prev = yaw - mpu_yaw_offset;
     }
 }
 
