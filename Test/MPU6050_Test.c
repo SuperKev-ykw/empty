@@ -1,4 +1,4 @@
-﻿#if 0
+﻿#if 1
 
 /**
  * @file    MPU6050_Test.c
