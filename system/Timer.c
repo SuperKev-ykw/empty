@@ -88,6 +88,7 @@ void TIMER_0_INST_IRQHandler(void)
 
             // BlueSerial_Printf("[plot,%d]", Turn_State);//蓝牙发送运动状态
             BlueSerial_Printf("[plot,%f]", mpu_corrected_yaw);//蓝牙发送 YAW 角度
+            Serial_Printf("%.2f\n", (double)mpu_corrected_yaw);
         }
     }
 }

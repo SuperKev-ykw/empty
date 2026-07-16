@@ -66,7 +66,6 @@ int main(void)
             OLED_Refresh();
         }
 
-        // delay_ms(10);
     }
 }
 

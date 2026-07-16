@@ -144,9 +144,14 @@ unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx) {
 
 int DMP_Init(void) {
     int res;
-    /* 使用工程的 TIMER_0 提供 1ms 计时，不配置 SysTick */
-    delay_cycles(CPUCLK_FREQ / 10);
-    res = mpu_init();
+
+    /* 重试 3 次，解决上电概率性失败 */
+    for (int retry = 0; retry < 3; retry++)
+    {
+        delay_cycles(CPUCLK_FREQ / 10);   /* 等待 MPU6050 上电稳定 */
+        res = mpu_init();
+        if (res == 0) break;              /* 成功则跳出 */
+    }
     if (res) return res; 
     
     
@@ -261,6 +266,10 @@ void MPU_Update(void)
             mpu_raw_yaw_prev   = 0.0f;
             mpu_corrected_yaw  = 0.0f;
             mpu_calibrated     = 1;
+
+            /* 排空 FIFO 中残留的旧帧，避免后续增量累加读到校准前的数据 */
+            while (DMP_Read_Data(&pitch, &roll, &yaw) == 0)
+                ;
         }
         return;
     }
