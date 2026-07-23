@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    Grayscale.c
  * @brief   8 路灰度传感器驱动
  * @details 实现 8 路灰度传感器的数据读取和加权偏差计算
@@ -30,11 +30,16 @@
  *   1. 调用 Gray_Sensor_Init()（可选，SysConfig 已初始化）
  *   2. 在循环中调用 Grayscale_GetDeviation() 直接获取偏差值
  *      或调用 Gray_Sensor_Read() 后读取 Gray_1 ~ Gray_8 全局变量
+ * 
+ * 参数调节在六十多行，但是直行的PID在Motor.c里面
+ * 
  */
 
 #include "Grayscale.h"
+#include "Motor.h"
+#include "Timer.h"
 
-/* ===================== 全局变量 ===================== */
+/* ===================== 灰度传感器全局变量 ===================== */
 uint8_t Gray_1 = 0;   // 最右边灰度
 uint8_t Gray_2 = 0;
 uint8_t Gray_3 = 0;
@@ -44,20 +49,55 @@ uint8_t Gray_6 = 0;
 uint8_t Gray_7 = 0;
 uint8_t Gray_8 = 0;   // 最左边灰度
 
+/* ===================== 循迹控制全局变量 ===================== */
+uint8_t RunFlag = 0;            /* 循迹运行标志 */
+int16_t PWML = 0;               /* 左电机当前PWM值（显示用） */
+int16_t PWMR = 0;               /* 右电机当前PWM值（显示用） */
+
+/* ===================== 循迹模式 ===================== */
+uint8_t Turn_Mode = 2;          /* 1=三段式拐弯,适合直角拐弯； 2=纯PD循迹(8路全参与,默认)，适用于曲线拐弯 */
+uint8_t Turn_State = TURN_IDLE; /* 模式1状态机状态 */
+uint8_t Turn_Direction = 0;     /* 模式1拐弯方向（1=左，2=右） */
+uint32_t Turn_Start_Tick = 0;   /* 模式1拐弯触发时刻 */
+uint8_t Gray_LineFound = 0;     /* 0=寻线中直行, 1=已捕获黑线进入循迹 */
+uint8_t  M2_State     = M2_IDLE;/* 模式2状态机状态， M2_IDLE=直行， M2_TURN=弯 */
+
+/* ===================== 通用蓝牙可调参数（两模式共用） ===================== */
+uint16_t BaseSpeed = 30;        /* BSp   直行基础速度 */
+uint16_t SoftStartTime =500;  /* SST   起步/出弯软加速时间（ms），越大加速越慢 */
+
+/* ===================== 模式1参数（三段式拐弯） ===================== */
+uint16_t TurnDecelTime = 150;   /* TdT   拐弯减速平滑时间（ms） */
+uint16_t TurnPower = 10;        /* TdP   拐弯差速幅值 */
+uint16_t DecelSpeed = 1000;     /* TdS   拐弯前减速目标速度 */
+uint16_t JoyTurn = 10;          /* JTurn 摇杆转向倍率 */
+
+/* ===================== 模式2参数（纯PD循迹） ===================== */
+float TurnSlowRatio = 0.15f;    /* TSlo  过弯降速比例：越大拐弯基础速度越慢，为0时是以基础速度拐弯 */
+float Gray_WeightScale = 1.5f;  /* WSc   Gray_1/8 乘 WSc, Gray_2/7 乘 (WSc+1)/2，放大纠偏力度 */
+
+/* ===================== 速度斜坡实例（内部） ===================== */
+static SpeedRamp_t soft_ramp;    /* 起步/出弯软启动：0 → BaseSpeed */
+static SpeedRamp_t decel_ramp;   /* 转弯减速：当前速度 → 目标速度 */
+static uint8_t  soft_was_running = 0;  /* 上次 RunFlag 状态（上升沿检测用） */
+
 /**
   * @brief  初始化8路灰度传感器GPIO
-  * @details GPIO 已在 SYSCFG_DL_init() 中通过 SysConfig 配置为上拉数字输入
-  *          本函数仅作为接口预留，硬件初始化由 SysConfig 自动完成
-  *          参考 STM32 标准库 Gray_Sensor_Init() 风格
+  * @details 在 SysConfig 初始化基础上，将引脚改为下拉输入，
+  *          使拔线时引脚固定为 LOW（GRAY_WHITE），
+  *          确保全白丢线检测正确触发
   */
 void Gray_Sensor_Init(void)
 {
-    /* GPIO 初始化已由 SysConfig 在 SYSCFG_DL_init() 中完成：
-     *   DL_GPIO_initDigitalInputFeatures(IOMUX_PINCM23~29, PINCM44,
-     *       DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
-     *       DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
-     * 此处保留函数声明以保持与 STM32 参考工程接口一致
-     */
+    /* SysConfig 已配置为 RESISTOR_NONE，此处重设为下拉 */
+    DL_GPIO_setDigitalInternalResistor(Gray_Gray_1_IOMUX, DL_GPIO_RESISTOR_PULL_DOWN);
+    DL_GPIO_setDigitalInternalResistor(Gray_Gray_2_IOMUX, DL_GPIO_RESISTOR_PULL_DOWN);
+    DL_GPIO_setDigitalInternalResistor(Gray_Gray_3_IOMUX, DL_GPIO_RESISTOR_PULL_DOWN);
+    DL_GPIO_setDigitalInternalResistor(Gray_Gray_4_IOMUX, DL_GPIO_RESISTOR_PULL_DOWN);
+    DL_GPIO_setDigitalInternalResistor(Gray_Gray_5_IOMUX, DL_GPIO_RESISTOR_PULL_DOWN);
+    DL_GPIO_setDigitalInternalResistor(Gray_Gray_6_IOMUX, DL_GPIO_RESISTOR_PULL_DOWN);
+    DL_GPIO_setDigitalInternalResistor(Gray_Gray_7_IOMUX, DL_GPIO_RESISTOR_PULL_DOWN);
+    DL_GPIO_setDigitalInternalResistor(Gray_Gray_8_IOMUX, DL_GPIO_RESISTOR_PULL_DOWN);
 }
 
 /**
@@ -90,50 +130,24 @@ float Grayscale_GetDeviation(void)
 {
     Gray_Sensor_Read();
 
+    float ws = Gray_WeightScale;                        /* 最外层倍率 */
+    float ws2 = ws * 0.75f + 0.25f;                    /* 稍外层倍率（靠近 ws 侧） */
     float weighted_sum = 0;
     uint8_t active_count = 0;
 
-    if (Gray_8 == GRAY_BLACK) { weighted_sum += GRAY_WEIGHT_8; active_count++; }
-    if (Gray_7 == GRAY_BLACK) { weighted_sum += GRAY_WEIGHT_7; active_count++; }
-    if (Gray_6 == GRAY_BLACK) { weighted_sum += GRAY_WEIGHT_6; active_count++; }
-    if (Gray_5 == GRAY_BLACK) { weighted_sum += GRAY_WEIGHT_5; active_count++; }
-    if (Gray_4 == GRAY_BLACK) { weighted_sum += GRAY_WEIGHT_4; active_count++; }
-    if (Gray_3 == GRAY_BLACK) { weighted_sum += GRAY_WEIGHT_3; active_count++; }
-    if (Gray_2 == GRAY_BLACK) { weighted_sum += GRAY_WEIGHT_2; active_count++; }
-    if (Gray_1 == GRAY_BLACK) { weighted_sum += GRAY_WEIGHT_1; active_count++; }
+    if (Gray_8 == GRAY_BLACK) { weighted_sum += (float)GRAY_WEIGHT_8 * ws;  active_count++; }
+    if (Gray_7 == GRAY_BLACK) { weighted_sum += (float)GRAY_WEIGHT_7 * ws2; active_count++; }
+    if (Gray_6 == GRAY_BLACK) { weighted_sum += (float)GRAY_WEIGHT_6;       active_count++; }
+    if (Gray_5 == GRAY_BLACK) { weighted_sum += (float)GRAY_WEIGHT_5;       active_count++; }
+    if (Gray_4 == GRAY_BLACK) { weighted_sum += (float)GRAY_WEIGHT_4;       active_count++; }
+    if (Gray_3 == GRAY_BLACK) { weighted_sum += (float)GRAY_WEIGHT_3;       active_count++; }
+    if (Gray_2 == GRAY_BLACK) { weighted_sum += (float)GRAY_WEIGHT_2 * ws2; active_count++; }
+    if (Gray_1 == GRAY_BLACK) { weighted_sum += (float)GRAY_WEIGHT_1 * ws;  active_count++; }
 
     if (active_count == 0) return 0;   // 全白离线，偏差返回0
 
     return weighted_sum / active_count;
 }
-
-/* ===================== 循迹控制：包含 Motor.h 以下内容 ===================== */
-#include "Motor.h"
-#include "Timer.h"
-
-/* ===================== 循迹全局变量 ===================== */
-uint8_t RunFlag = 0;
-int16_t PWML = 0;
-int16_t PWMR = 0;
-uint8_t Turn_State = TURN_IDLE;
-uint8_t Turn_Direction = 0;    /* 1=左弯，2=右弯 */
-
-/* ===================== 通用速度斜坡实例 ===================== */
-static SpeedRamp_t soft_ramp;    /* 起步/出弯软启动：0 → BaseSpeed（300ms） */
-static SpeedRamp_t decel_ramp;   /* 转弯减速：当前速度 → DecelSpeed */
-
-static uint8_t  soft_was_running = 0;  /* 上次 RunFlag 状态（上升沿检测） */
-
-/* ===================== 拐弯变量 ===================== */
-uint32_t Turn_Start_Tick = 0;
-
-/* ===================== 蓝牙可调参数（默认值） ===================== */
-uint16_t BaseSpeed = 20;     /* 直行基础速度 */
-uint16_t TurnDecelTime = 150;// 拐弯减速时间（ms），越大减速过程越慢，防止目标速度跳变导致电机刹车停顿
-uint16_t TurnPower = 10;     // 拐弯幅度=转弯时左右轮胎速度差的一半
-uint16_t DecelSpeed = 10;    // 拐弯前的减速速度
-uint16_t SoftStartTime = 300;/* 起步/出弯软启动加速时间（ms），越大加速越慢 */
-uint16_t JoyTurn = 10;       /* 摇杆转向倍率，蓝牙 [slider,JTurn,10] 可调 */
 
 /**
  * @brief  计算循迹偏差（仅用中间6路传感器 Gray_2~Gray_7）
@@ -186,14 +200,94 @@ void Gray_Track_Control(void)
         return;
     }
 
-    /* ============ RunFlag 上升沿检测：启动软启动 ============ */
+    /* ============ RunFlag 上升沿检测：启动软启动 + 进入寻线阶段 ============ */
     if (RunFlag && !soft_was_running)
     {
         soft_was_running = 1;
+        Gray_LineFound = 0;     /* 开始直行寻线 */
+        M2_State = M2_IDLE;     /* 模式2状态机复位 */
         SpeedRamp_Start(&soft_ramp, 0, (int16_t)BaseSpeed, SoftStartTime);
     }
 
-    /* ============ 三段式拐弯状态机 ============ */
+    /* ============ 模式2：两段状态机（基于触发灰度判定） ============ */
+    /*
+     * M2_IDLE - 直行：只有中间 Gray_3/4/5/6 见线，全速 PD 循迹
+     * M2_TURN - 转弯：Gray_1/2/7/8 中任意有黑线，降速 PD 过弯
+     */
+    if (Turn_Mode == 2)
+    {
+        float deviation = Grayscale_GetDeviation();
+
+        /* ---- 全白处理：区分寻线中和循迹中丢线 ---- */
+        if (Gray_1 != GRAY_BLACK && Gray_2 != GRAY_BLACK &&
+            Gray_3 != GRAY_BLACK && Gray_4 != GRAY_BLACK &&
+            Gray_5 != GRAY_BLACK && Gray_6 != GRAY_BLACK &&
+            Gray_7 != GRAY_BLACK && Gray_8 != GRAY_BLACK)
+        {
+            if (Gray_LineFound)
+            {
+                /* 循迹中丢线：保持上一次左右轮速度 */
+                goto track_done;
+            }
+            else
+            {
+                /* 寻线中：直行，软加速到 BaseSpeed */
+                int16_t speed = SpeedRamp_IsActive(&soft_ramp) ? SpeedRamp_Update(&soft_ramp) : (int16_t)BaseSpeed;
+                Motor_SetTargetSpeed(speed, speed);
+                goto track_done;
+            }
+        }
+        Gray_LineFound = 1;     /* 捕获到黑线，进入循迹 */
+
+        /* ---- 判定当前状态：基于触发的灰度 ---- */
+        uint8_t outer = (Gray_1 == GRAY_BLACK || Gray_2 == GRAY_BLACK ||
+                         Gray_7 == GRAY_BLACK || Gray_8 == GRAY_BLACK);
+
+        if (outer)// 外侧四个灰度触发
+        {
+            /* 外侧触发 → 转入弯道 */
+            if (M2_State != M2_TURN)
+            {
+                M2_State = M2_TURN;
+                int16_t avg = (int16_t)((motor_l_ctrl.target_speed + motor_r_ctrl.target_speed) / 2);
+                int16_t turn_spd = (int16_t)(BaseSpeed * (1.0f - TurnSlowRatio));
+                SpeedRamp_Start(&decel_ramp, avg, turn_spd, TurnDecelTime);
+            }
+
+            int16_t speed;
+            if (SpeedRamp_IsActive(&decel_ramp))
+                speed = SpeedRamp_Update(&decel_ramp);
+            else
+                speed = (int16_t)(BaseSpeed * (1.0f - TurnSlowRatio));
+            Racecar((float)speed, deviation);
+        }
+        else
+        {
+            /* 仅中间触发 → 直道 */
+            if (M2_State != M2_IDLE)
+            {
+                M2_State = M2_IDLE;
+                int16_t cur = (int16_t)((motor_l_ctrl.target_speed + motor_r_ctrl.target_speed) / 2);
+                if (cur < 10) cur = 10;
+                SpeedRamp_Start(&soft_ramp, cur, (int16_t)BaseSpeed, SoftStartTime);
+            }
+
+            int16_t speed;
+            if (SpeedRamp_IsActive(&soft_ramp))
+            {
+                int16_t rv = SpeedRamp_Update(&soft_ramp);
+                speed = (rv < (int16_t)BaseSpeed) ? rv : (int16_t)BaseSpeed;
+            }
+            else
+            {
+                speed = (int16_t)BaseSpeed;
+            }
+            Racecar((float)speed, deviation);
+        }
+        goto track_done;
+    }
+
+    /* ============ 模式1：三段式拐弯状态机 ============ */
 
     /* P1：优先执行转弯（退出检查在 TURN_ACTIVE 内部处理） */
     if (Turn_State == TURN_DECEL)
@@ -252,6 +346,7 @@ void Gray_Track_Control(void)
         }
     }
 
+track_done:
     /* ---- 更新用于显示的 PWM 值 ---- */
     PWML = (int16_t)motor_l_ctrl.target_speed;
     PWMR = (int16_t)motor_r_ctrl.target_speed;

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    Serial.c
  * @brief   串口通信驱动实现文件
  * @details 基于 MSPM0G3507 + SysConfig 配置的 UART 驱动
@@ -37,7 +37,6 @@
 
 #include "ti_msp_dl_config.h"
 #include "Serial.h"
-#include "F32C.h"               /* 用于 ISR 中直接解析 F32C 反馈帧 */
 
 /* ==================== 环形缓冲区实现 ==================== */
 
@@ -56,14 +55,9 @@ static RingBuffer rxBuffer = {
     .count = 0
 };
 
-/* ---- ISR 帧解析调试计数 ---- */
+/* ---- ISR 调试计数 ---- */
 volatile uint32_t uart1_isr_count = 0;      /* UART1 ISR 进入次数（供 OLED 显示） */
-volatile uint32_t dbg_rx_total = 0;
-volatile uint32_t dbg_frame_header = 0;
-volatile uint32_t dbg_frame_full = 0;
-volatile uint32_t dbg_tail_err = 0;
-volatile uint32_t dbg_bcc_err = 0;
-volatile uint32_t dbg_frame_ok = 0;
+volatile uint32_t dbg_rx_total = 0;         /* ISR 收到的总字节数 */
 
 /**
  * @brief  向环形缓冲区写入一个字节（在中断中调用）
@@ -207,14 +201,57 @@ uint8_t Serial_GetRxData(void)
     return RingBuffer_Read(&rxBuffer);
 }
 
+/* ==================== 远程按键帧解析（主循环轮询缓冲区） ==================== */
+
+/** @brief 最近收到的有效键值（`Serial_GetKeyFrame` 写入，供 OLED 显示） */
+uint8_t Serial_LastKey = 0;
+
+/**
+ * @brief  从环形缓冲区轮询解析 0xAA KEY 0xFF 远程按键帧
+ * @return 有效键值（1~255），无完整帧时返回 0
+ * @note   在主循环中周期调用，状态机自动同步帧头
+ */
+uint8_t Serial_GetKeyFrame(void)
+{
+    static enum { WAIT_AA, WAIT_KEY, WAIT_FF } st = WAIT_AA;
+    static uint8_t key = 0;
+
+    while (Serial_GetRxCount() > 0)
+    {
+        uint8_t byte = Serial_GetRxData();
+
+        switch (st)
+        {
+        case WAIT_AA:
+            if (byte == 0xAA) { st = WAIT_KEY; }
+            break;
+        case WAIT_KEY:
+            key = byte;
+            st = WAIT_FF;
+            break;
+        case WAIT_FF:
+            if (byte == 0xFF)
+            {
+                st = WAIT_AA;
+                Serial_LastKey = key;
+                return key;
+            }
+            st = WAIT_AA;
+            break;
+        default:
+            st = WAIT_AA;
+            break;
+        }
+    }
+    return 0;
+}
+
 /* ==================== 中断服务函数 ==================== */
 
 /**
  * @brief  UART1 接收中断服务函数
- * @note   排空 RX FIFO 并解析 F32C 9 字节反馈帧（协议与参考工程一致）：
- *           0x7A ADDR TYPE DATA4 BCC 0x7B
- *         ADDR=1/2 → TYPE=0x01(角度) / 0x00(速度)
- *         解析结果直接更新 motor{1,2}_{current_position,current_speed}
+ * @note   排空 RX FIFO，原始字节写入环形缓冲区供主循环解析
+ *         F32C 帧解析已移至 F32C_Serial.c
  */
 void UART1_IRQHandler(void)
 {
@@ -223,9 +260,6 @@ void UART1_IRQHandler(void)
     /* 确认中断来源并清除 UART 外设中断标志 */
     if (DL_UART_Main_getPendingInterrupt(UART_1_INST) != DL_UART_MAIN_IIDX_RX)
         return;
-
-    static uint8_t rx_buf[9];
-    static uint8_t rx_idx = 0;
 
     /* 排空 RX FIFO */
     while (!DL_UART_Main_isRXFIFOEmpty(UART_1_INST))
@@ -236,71 +270,5 @@ void UART1_IRQHandler(void)
 
         /* 写入环形缓冲区（供 Serial_GetRxData() / Serial_GetRxCount() 读取） */
         RingBuffer_Write(&rxBuffer, byte);
-
-        /* ── F32C 帧同步状态机 ── */
-
-        /* 等待帧头 0x7A */
-        if (rx_idx == 0)
-        {
-            if (byte != 0x7A)
-                continue;
-            dbg_frame_header++;
-            rx_buf[0] = byte;
-            rx_idx = 1;
-            continue;
-        }
-
-        /* 收集第 2~9 字节 */
-        rx_buf[rx_idx++] = byte;
-
-        if (rx_idx < 9)
-            continue;
-
-        /* ──── 已收满 9 字节，复位索引 ──── */
-        rx_idx = 0;
-        dbg_frame_full++;
-
-        /* 1) 校验帧尾 */
-        if (rx_buf[8] != 0x7B)
-        {
-            dbg_tail_err++;
-            continue;
-        }
-
-        /* 2) BCC 校验：前 7 字节 XOR */
-        uint8_t bcc = 0;
-        for (uint8_t i = 0; i < 7; i++)
-            bcc ^= rx_buf[i];
-        if (bcc != rx_buf[7])
-        {
-            dbg_bcc_err++;
-            continue;
-        }
-
-        /* 3) 提取 4 字节大端有符号整数 */
-        int32_t value = (int32_t)(((uint32_t)rx_buf[3] << 24) |
-                                  ((uint32_t)rx_buf[4] << 16) |
-                                  ((uint32_t)rx_buf[5] << 8)  |
-                                  ((uint32_t)rx_buf[6]));
-
-        uint8_t addr = rx_buf[1];
-        uint8_t type = rx_buf[2];
-
-        /* 4) 按地址和类型更新全局变量 */
-        if (addr == MOTOR1_ID)
-        {
-            if (type == FB_MULTI_ANGLE)
-                motor1_current_position = value;
-            else if (type == FB_SPEED)
-                motor1_current_speed = value;
-        }
-        else if (addr == MOTOR2_ID)
-        {
-            if (type == FB_MULTI_ANGLE)
-                motor2_current_position = value;
-            else if (type == FB_SPEED)
-                motor2_current_speed = value;
-        }
-        dbg_frame_ok++;
     }
 }

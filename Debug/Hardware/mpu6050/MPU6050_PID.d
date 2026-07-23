@@ -1,6 +1,7 @@
 # FIXED
 
-Test/Gimbal_Test.o: ../Test/Gimbal_Test.c \
+Hardware/mpu6050/MPU6050_PID.o: ../Hardware/mpu6050/MPU6050_PID.c \
+ ../Hardware/mpu6050/MPU6050_PID.h ../Hardware/mpu6050/mpu_port.h \
  ti_msp_dl_config.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h \
@@ -84,13 +85,9 @@ Test/Gimbal_Test.o: ../Test/Gimbal_Test.c \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/System/delay.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/oled.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/key.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/System/Timer.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/F32C.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Serial.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/BlueSerial.h
+ D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Motor.h
+../Hardware/mpu6050/MPU6050_PID.h:
+../Hardware/mpu6050/mpu_port.h:
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h:
@@ -174,10 +171,4 @@ C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_vref.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
-D:/STUDY/MSPM0G3507/Myworkspace/empty/System/delay.h:
-D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/oled.h:
-D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/key.h:
-D:/STUDY/MSPM0G3507/Myworkspace/empty/System/Timer.h:
-D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/F32C.h:
-D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Serial.h:
-D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/BlueSerial.h:
+D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Motor.h:

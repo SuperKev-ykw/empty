@@ -1,4 +1,4 @@
-﻿#if 0
+#if 0
 
 /**
  * @file    OLED_LED_Test.c
@@ -13,7 +13,7 @@
  *   - OLED 持续显示：
  *       第一行："Hello World!"
  *       第二行："Temp:25.6C"（浮点数显示）
- *   - 板载 LED（LED0）以 50ms 周期闪烁（亮 50ms 灭 50ms）
+ *   - 板载 LED（LED0）以 1000ms 周期闪烁（亮 1000ms 灭 1000ms）
  *
  * 注意：本文件当前完全注释掉，仅作为 API 使用示例参考。
  */
@@ -40,9 +40,9 @@ int main(void)
         OLED_Printf(0, 16, 16, "Temp:%.1fC", 25.6);
         OLED_Refresh();
 
-        delay_ms(50);
+        delay_ms(1000);
         DL_GPIO_clearPins(LED_PORT, LED_LED0_PIN);
-        delay_ms(50);
+        delay_ms(1000);
         DL_GPIO_setPins(LED_PORT, LED_LED0_PIN);
     }
 }

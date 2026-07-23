@@ -1,4 +1,4 @@
-﻿#if 0
+#if 0
 
 /*
  * Copyright (c) 2021, Texas Instruments Incorporated

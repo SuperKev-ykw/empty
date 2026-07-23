@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    mpu_port.c
  * @brief   MPU6050 DMP 移植层实现
  * @details 实现 inv_mpu.c 所需的 I2C 读写函数，并封装 DMP_Init / DMP_Read_Data

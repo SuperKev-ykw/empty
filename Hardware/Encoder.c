@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Encoder.c
  * @brief   编码器驱动实现
  * @details 使用 GPIO 外部中断 + 正交解码，通过 TIMG12 10ms 定时器周期

@@ -1,4 +1,4 @@
-﻿#if 0
+#if 0
 
 /**
  * @file    Grayscale_Test.c

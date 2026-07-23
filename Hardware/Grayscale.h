@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    Grayscale.h
  * @brief   8 路灰度传感器驱动接口
  * @details 定义灰度传感器引脚、电平宏、加权表和函数声明
@@ -53,22 +53,40 @@ extern uint8_t Gray_6;
 extern uint8_t Gray_7;
 extern uint8_t Gray_8;   // 最左边灰度
 
-/* ===================== 基础速度（蓝牙可调） ===================== */
-extern uint16_t BaseSpeed;
+/* ===================== 循迹控制全局变量 ===================== */
+extern uint8_t RunFlag;              // 循迹运行标志
+extern int16_t PWML, PWMR;          // 左右电机当前PWM值
+extern uint8_t Turn_Mode;            // 1=三段式拐弯(默认), 2=纯PD循迹(8路全参与)
+extern uint8_t Gray_LineFound;       // 0=寻线中直行, 1=已捕获黑线进入循迹
 
-/* ===================== 拐弯状态机 ===================== */
+/* ===================== 拐弯状态机（模式1） ===================== */
 #define TURN_IDLE     0       // 正常循迹，PD微调
 #define TURN_DECEL    1       // 外侧触发，减速直行
 #define TURN_ACTIVE   2       // 差速拐弯
 
-/* ===================== 默认拐弯参数（蓝牙可调） ===================== */
-extern uint16_t TurnDecelTime;   // 减速时间（ms）
-extern uint16_t TurnPower;      // 拐弯差速力度
-extern uint16_t DecelSpeed;     // 减速入弯基础速度
-extern uint16_t SoftStartTime;  // 起步/出弯软启动加速时间（ms）
+extern uint8_t Turn_State;           // 模式1状态
+extern uint8_t Turn_Direction;       // 1=左弯，2=右弯
+extern uint32_t Turn_Start_Tick;     // 拐弯触发时刻
 
-/* ===================== 摇杆转向灵敏度（蓝牙可调） ===================== */
-extern uint16_t JoyTurn;        // 摇杆转向倍率，默认15
+/* ===================== 通用蓝牙可调参数（两模式共用） ===================== */
+extern uint16_t BaseSpeed;           // BSp  直行基础速度
+extern uint16_t SoftStartTime;       // SST  起步/出弯软加速时间（ms）
+
+/* ===================== 模式1蓝牙参数（三段式拐弯） ===================== */
+extern uint16_t TurnDecelTime;       // TdT  减速平滑时间（ms）
+extern uint16_t TurnPower;           // TdP  差速幅值
+extern uint16_t DecelSpeed;          // TdS  减速目标速度
+extern uint16_t JoyTurn;             // JTurn 摇杆转向倍率
+
+/* ===================== 模式2状态 ===================== */
+#define M2_IDLE     0       /* 直行：仅中间灰度见线，全速PD */
+#define M2_TURN     1       /* 转弯：外侧灰度触发，降速PD */
+
+extern uint8_t M2_State;             /* 模式2状态 */
+
+/* ===================== 模式2蓝牙参数（纯PD循迹） ===================== */
+extern float TurnSlowRatio;          // TSlo 过弯降速比例，默认0.15
+extern float Gray_WeightScale;       // WSc  外侧权重倍率，默认4.1
 
 /* ===================== 通用速度斜坡结构体 ===================== */
 typedef struct {
@@ -83,13 +101,6 @@ void SpeedRamp_Start(SpeedRamp_t *ramp, int16_t from, int16_t to, uint32_t durat
 int16_t SpeedRamp_Update(SpeedRamp_t *ramp);   /* 返回当前速度，完成后返回目标值 */
 uint8_t SpeedRamp_IsActive(SpeedRamp_t *ramp); /* 查询是否仍在过渡中 */
 void SpeedRamp_Stop(SpeedRamp_t *ramp);         /* 强制结束斜坡 */
-
-/* ===================== 循迹控制全局变量 ===================== */
-extern uint8_t RunFlag;              // 循迹运行标志
-extern int16_t PWML, PWMR;          // 左右电机当前PWM值
-extern uint8_t Turn_State;           // 拐弯状态机状态
-extern uint8_t Turn_Direction;       // 拐弯方向（1=左弯，2=右弯）
-extern uint32_t Turn_Start_Tick;     // 拐弯触发时刻的系统滴答值
 
 /* ===================== 原始函数声明 ===================== */
 void Gray_Sensor_Init(void);        // 初始化8路灰度传感器GPIO

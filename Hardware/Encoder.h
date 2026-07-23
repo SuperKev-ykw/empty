@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Encoder.h
  * @brief   编码器驱动头文件
  * @details 使用 GPIO 外部中断模拟正交解码，读取两路 AB 相编码器脉冲。

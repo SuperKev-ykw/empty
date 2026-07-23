@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    F32C.h
  * @brief   F32C 无刷云台电机 TTL 协议驱动头文件
  * @details 电机 ID、模式宏定义及公开 API 声明
@@ -32,7 +32,9 @@
 #define MOTOR2_ID       0x02
 
 /* ==================== 模式定义 ==================== */
-#define MODE_POS        1       /* 位置闭环模式 */
+#define MODE_SPEED          0   /* 速度闭环模式，上电默认 */
+#define MODE_POS            1   /* 多圈 T 型位置闭环模式（云台推荐） */
+#define MODE_POS_SINGLE     2   /* 单圈 T 型位置模式（0~359.9°，就近旋转） */
 
 /* ==================== 角度常量 ==================== */
 #define POS_10          (10 * 10)   /* 10 度，单位 0.1 度 */
@@ -45,8 +47,9 @@
 
 /* ==================== 反馈命令定义 ==================== */
 #define CMD_FEEDBACK        0x0E     /* 反馈读取命令 */
-#define FB_MULTI_ANGLE      0x01     /* 多圈绝对角度 (单位 0.1°) */
 #define FB_SPEED            0x00     /* 速度反馈 (单位 RPM) */
+#define FB_MULTI_ANGLE      0x01     /* 多圈绝对角度 (单位 0.1°) */
+#define FB_SINGLE_ANGLE     0x02     /* 单圈机械角度 (单位 0.1°, 0~3599) */
 
 /* ==================== 全局变量声明 ==================== */
 extern int32_t motor1_target;
@@ -60,9 +63,15 @@ extern volatile int32_t motor2_current_speed;       /* 电机2当前转速 (RPM)
 
 /* ==================== 发送 API ==================== */
 void Send_Enable(uint8_t id);
+void Send_Disable(uint8_t id);                              /* 0x05: 失能电机 */
 void Send_Mode(uint8_t id, uint16_t mode);
 void Send_Speed(uint8_t id, int16_t speed);
 void Send_Position(uint8_t id, int32_t position);
+void Send_Position_Single(uint8_t id, int16_t position);    /* 单圈位置（0.1°, 0~3599） */
+void Send_SetZero(uint8_t id);                              /* 0x0A: 当前位置设为单圈 0° */
+void Send_MultiClear(uint8_t id);                           /* 0x09: 清空多圈累计值 */
+void Send_Save(uint8_t id);                                 /* 0x08: 保存参数到 Flash */
+void Send_Acc(uint8_t id, uint16_t acc);                    /* 0x07: 设置加速度（转/s²） */
 
 /**
  * @brief 发送反馈读取请求

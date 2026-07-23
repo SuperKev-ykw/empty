@@ -10,6 +10,7 @@ C_SRCS += \
 ../Hardware/BlueSerial.c \
 ../Hardware/Encoder.c \
 ../Hardware/F32C.c \
+../Hardware/F32C_Serial.c \
 ../Hardware/Grayscale.c \
 ../Hardware/HMC5883L.c \
 ../Hardware/Key.c \
@@ -23,6 +24,7 @@ C_DEPS += \
 ./Hardware/BlueSerial.d \
 ./Hardware/Encoder.d \
 ./Hardware/F32C.d \
+./Hardware/F32C_Serial.d \
 ./Hardware/Grayscale.d \
 ./Hardware/HMC5883L.d \
 ./Hardware/Key.d \
@@ -36,6 +38,7 @@ OBJS += \
 ./Hardware/BlueSerial.o \
 ./Hardware/Encoder.o \
 ./Hardware/F32C.o \
+./Hardware/F32C_Serial.o \
 ./Hardware/Grayscale.o \
 ./Hardware/HMC5883L.o \
 ./Hardware/Key.o \
@@ -49,6 +52,7 @@ OBJS__QUOTED += \
 "Hardware\BlueSerial.o" \
 "Hardware\Encoder.o" \
 "Hardware\F32C.o" \
+"Hardware\F32C_Serial.o" \
 "Hardware\Grayscale.o" \
 "Hardware\HMC5883L.o" \
 "Hardware\Key.o" \
@@ -62,6 +66,7 @@ C_DEPS__QUOTED += \
 "Hardware\BlueSerial.d" \
 "Hardware\Encoder.d" \
 "Hardware\F32C.d" \
+"Hardware\F32C_Serial.d" \
 "Hardware\Grayscale.d" \
 "Hardware\HMC5883L.d" \
 "Hardware\Key.d" \
@@ -75,6 +80,7 @@ C_SRCS__QUOTED += \
 "../Hardware/BlueSerial.c" \
 "../Hardware/Encoder.c" \
 "../Hardware/F32C.c" \
+"../Hardware/F32C_Serial.c" \
 "../Hardware/Grayscale.c" \
 "../Hardware/HMC5883L.c" \
 "../Hardware/Key.c" \

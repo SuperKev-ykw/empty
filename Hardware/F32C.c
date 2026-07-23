@@ -81,6 +81,15 @@ static void Build_Enable(uint8_t id)//使能电机
     cmd_enable[4] = 0x7B;
 }
 
+static void Build_Disable(uint8_t id)//失能电机
+{
+    cmd_enable[0] = 0x7A;   /* 复用 cmd_enable 缓冲区 */
+    cmd_enable[1] = id;
+    cmd_enable[2] = 0x05;
+    cmd_enable[3] = BCC_Sum(cmd_enable, 3);
+    cmd_enable[4] = 0x7B;
+}
+
 static void Build_Mode(uint8_t id, uint16_t mode)//设置模式
 {
     cmd_mode[0] = 0x7A;
@@ -116,11 +125,81 @@ static void Build_Position(uint8_t id, int32_t position)//设置多圈绝对控�
     cmd_position[8] = 0x7B;
 }
 
+/* ---- 单圈位置 (0x03, 2 字节数据) ---- */
+static uint8_t cmd_pos_single[7];
+
+static void Build_Position_Single(uint8_t id, int16_t position)//设置单圈绝对位置（0.1°, 0~3599）
+{
+    cmd_pos_single[0] = 0x7A;
+    cmd_pos_single[1] = id;
+    cmd_pos_single[2] = 0x03;
+    cmd_pos_single[3] = (uint8_t)((uint16_t)position >> 8);
+    cmd_pos_single[4] = (uint8_t)(position);
+    cmd_pos_single[5] = BCC_Sum(cmd_pos_single, 5);
+    cmd_pos_single[6] = 0x7B;
+}
+
+/* ---- 设置零点 (0x0A, 无数据段) ---- */
+static uint8_t cmd_setzero[5];
+
+static void Build_SetZero(uint8_t id)//当前位置设为单圈 0°
+{
+    cmd_setzero[0] = 0x7A;
+    cmd_setzero[1] = id;
+    cmd_setzero[2] = 0x0A;
+    cmd_setzero[3] = BCC_Sum(cmd_setzero, 3);
+    cmd_setzero[4] = 0x7B;
+}
+
+/* ---- 多圈清零 (0x09, 无数据段) ---- */
+static uint8_t cmd_mclear[5];
+
+static void Build_MultiClear(uint8_t id)//清空多圈累计值（临时，不上电保存）
+{
+    cmd_mclear[0] = 0x7A;
+    cmd_mclear[1] = id;
+    cmd_mclear[2] = 0x09;
+    cmd_mclear[3] = BCC_Sum(cmd_mclear, 3);
+    cmd_mclear[4] = 0x7B;
+}
+
+/* ---- 保存参数 (0x08, 无数据段) ---- */
+static uint8_t cmd_save[5];
+
+static void Build_Save(uint8_t id)//保存参数到 Flash
+{
+    cmd_save[0] = 0x7A;
+    cmd_save[1] = id;
+    cmd_save[2] = 0x08;
+    cmd_save[3] = BCC_Sum(cmd_save, 3);
+    cmd_save[4] = 0x7B;
+}
+
+/* ---- 设置加速度 (0x07, 2 字节) ---- */
+static uint8_t cmd_acc[7];
+
+static void Build_Acc(uint8_t id, uint16_t acc)//设置加速度（单位：转/s²）
+{
+    cmd_acc[0] = 0x7A;
+    cmd_acc[1] = id;
+    cmd_acc[2] = 0x07;
+    cmd_acc[3] = (uint8_t)(acc >> 8);
+    cmd_acc[4] = (uint8_t)(acc);
+    cmd_acc[5] = BCC_Sum(cmd_acc, 5);
+    cmd_acc[6] = 0x7B;
+}
+
 /* ==================== 发送封装 (公开 API) ==================== */
 
 void Send_Enable(uint8_t id)
 {
     Build_Enable(id);
+    Serial_SendArray(cmd_enable, 5);
+}
+
+void Send_Disable(uint8_t id)
+{
+    Build_Disable(id);
     Serial_SendArray(cmd_enable, 5);
 }
 
@@ -140,6 +219,36 @@ void Send_Position(uint8_t id, int32_t position)
 {
     Build_Position(id, position);
     Serial_SendArray(cmd_position, 9);
+}
+
+void Send_Position_Single(uint8_t id, int16_t position)
+{
+    Build_Position_Single(id, position);
+    Serial_SendArray(cmd_pos_single, 7);
+}
+
+void Send_SetZero(uint8_t id)
+{
+    Build_SetZero(id);
+    Serial_SendArray(cmd_setzero, 5);
+}
+
+void Send_MultiClear(uint8_t id)
+{
+    Build_MultiClear(id);
+    Serial_SendArray(cmd_mclear, 5);
+}
+
+void Send_Save(uint8_t id)
+{
+    Build_Save(id);
+    Serial_SendArray(cmd_save, 5);
+}
+
+void Send_Acc(uint8_t id, uint16_t acc)
+{
+    Build_Acc(id, acc);
+    Serial_SendArray(cmd_acc, 7);
 }
 
 /* ==================== 反馈请求 ==================== */
@@ -223,6 +332,8 @@ void F32C_PollFeedback(void)
                 motor1_current_position = value;
             else if (type == FB_SPEED)
                 motor1_current_speed = value;
+            else if (type == FB_SINGLE_ANGLE)
+                motor1_current_position = value;
         }
         else if (addr == MOTOR2_ID)
         {
@@ -230,6 +341,8 @@ void F32C_PollFeedback(void)
                 motor2_current_position = value;
             else if (type == FB_SPEED)
                 motor2_current_speed = value;
+            else if (type == FB_SINGLE_ANGLE)
+                motor2_current_position = value;
         }
     }
 }

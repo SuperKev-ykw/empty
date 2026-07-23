@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include "Motor.h"
 #include "Grayscale.h"
+#include "mpu6050/MPU6050_PID.h"   /* YAW PID 参数定义 */
 
 /* ==================== 全局变量定义 ==================== */
 
@@ -285,12 +286,25 @@ void BlueSerial_Tasks(void)
         else if (strcmp(Name, "TKd") == 0) { Track_Kd = val_f; }
         /* 循迹速度 */
         else if (strcmp(Name, "BSp") == 0) { BaseSpeed = val_u16; }
+        else if (strcmp(Name, "SST") == 0) { SoftStartTime = val_u16; }
+        /* 模式2：过弯降速比例 */
+        else if (strcmp(Name, "TSlo") == 0) { TurnSlowRatio = val_f; if (TurnSlowRatio > 0.7f) TurnSlowRatio = 0.7f; }
         /* 拐弯参数 */
         else if (strcmp(Name, "TdT") == 0) { TurnDecelTime = val_u16; }
         else if (strcmp(Name, "TdP") == 0) { TurnPower = val_u16; }
         else if (strcmp(Name, "TdS") == 0) { DecelSpeed = val_u16; }
         /* 摇杆转向灵敏度 */
         else if (strcmp(Name, "JTrn") == 0) { JoyTurn = val_u16; }
+        /* 循迹模式：1=三段式拐弯, 2=纯PD循迹(8路全参与) */
+        else if (strcmp(Name, "TMod") == 0) { Turn_Mode = (uint8_t)(val_u16 > 0 ? 2 : 1); }
+        /* 外层权重倍率：Gray_1/8 乘 WSc, Gray_2/7 乘 (WSc+1)/2 */
+        else if (strcmp(Name, "WSc") == 0) { Gray_WeightScale = val_f; }
+        /* YAW 闭环 PI（在 MPU6050_Test.c 中定义） */
+        else if (strcmp(Name, "YKp") == 0) { g_yaw_kp = val_f; }
+        else if (strcmp(Name, "YKi") == 0) { g_yaw_ki = val_f; }
+        else if (strcmp(Name, "YKd") == 0) { g_yaw_kd = val_f; }
+        else if (strcmp(Name, "YDZ") == 0) { g_yaw_dead_zone = val_f; }
+        else if (strcmp(Name, "YTgt") == 0) { g_yaw_target = val_f; }
     }
     /* ============ 摇杆指令：手动控制 ============ */
     else if (strcmp(Tag, "joystick") == 0)

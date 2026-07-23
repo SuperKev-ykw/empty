@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    Motor.h
  * @brief   AT8236 直流电机驱动头文件
  * @details 驱动两路 AT8236 H 桥芯片，控制左右直流减速电机。
@@ -42,6 +42,7 @@
 /* ==================== PWM 限幅 ==================== */
 #define MOTOR_PWM_MAX   8000    /**< 最大占空比 (对应 period=8000, 5kHz) */
 #define MOTOR_PWM_MIN   (-8000) /**< 最小占空比 */
+#define MOTOR_PWM_DEAD  400     /**< 最小有效PWM（死区阈值，低于此值电机不转） */
 
 /* ==================== 速度环限幅（双环PID内环） ==================== */
 #define MOTOR_SPEED_PWM_MAX   8000.0f

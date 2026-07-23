@@ -1,4 +1,4 @@
-#if 0
+﻿#if 1
 /**
  * @file    empty.c
  * @brief   MSPM0G3507 循迹小车主程序
@@ -71,6 +71,18 @@ int main(void)
     Motor_Init();                        /* 电机GPIO+PWM */
     Encoder_Init();                      /* 编码器GPIO中断 */
     BlueSerial_Init();                   /* 蓝牙UART0中断 */
+    Serial_Init();                       /* 串口1 UART1中断 */
+
+    /* 串口1双清：排空硬件RX FIFO和软件环形缓冲区，避免上电毛刺被误判为有效帧 */
+    while (!DL_UART_Main_isRXFIFOEmpty(UART_1_INST))
+    {
+        (void)DL_UART_Main_receiveData(UART_1_INST);
+    }
+    while (Serial_GetRxCount() > 0)
+    {
+        (void)Serial_GetRxData();
+    }
+
     Motor_Speed_Init();                  /* 速度环PID清零 */
     Gray_Sensor_Init();                  /* 灰度传感器 */
 
@@ -97,8 +109,49 @@ int main(void)
 
     while (1)
     {
+        /* ========== UART1 远程按键帧解析 ========== */
+        {
+            uint8_t u1_key = Serial_GetKeyFrame();
+            if (u1_key != 0)
+            {
+                /* 收到新键值立即显示，不受 RunFlag 影响 */
+                OLED_Printf(0, 24, 8, "U1: KEY=%d           ", u1_key);
+                OLED_Refresh();
+            }
+            switch (u1_key)
+            {
+                case 1:
+                    /* Key1：启动循迹 */
+                    RunFlag = 1;
+                    Turn_State = TURN_IDLE;
+                    Turn_Direction = 0;
+                    Gray_SoftStart_Reset();
+                    break;
+
+                case 2:
+                    /* Key2：停止循迹 */
+                    RunFlag = 0;
+                    Motor_SetTargetSpeed(0, 0);
+                    Gray_SoftStart_Reset();
+                    Motor_Speed_PID_Reset();
+                    break;
+
+                default:
+                    /* 其他键值：仅显示，不执行动作（保留扩展接口） */
+                    break;
+            }
+        }
+
         /* ---- 按键扫描 ---- */
         uint8_t key = Key_GetNum();
+
+        /* 按下按键时通过串口1发送 0xAA KEY 0xFF（与参考工程一致） */
+        if (key != 0)
+        {
+            Serial_SendByte(0xAA);
+            Serial_SendByte(key);
+            Serial_SendByte(0xFF);
+        }
 
         /* Key1：启停翻转 */
         if (key == 1)
@@ -163,6 +216,9 @@ int main(void)
         float spd_r = (float)Encoder_GetSpeed(ENCODER_RIGHT) * Motor_Distance_Per_Pulse * 0.05f;
         float car_speed = (spd_l + spd_r) / 2.0f;
 
+    /* ---- 电机运动时跳过 OLED 刷新，避免刷新耗时影响控制时序 ---- */
+    if (!RunFlag && !Joystick_Active)
+    {
         /* ---- OLED显示（8号字体，固定宽度防残留） ---- */
         OLED_Printf(0, 0,  8, "Track:%s", RunFlag ? "ON " : "OFF");
         if (Joystick_Active)
@@ -173,27 +229,23 @@ int main(void)
             Encoder_GetSpeed(ENCODER_LEFT),
             Encoder_GetSpeed(ENCODER_RIGHT));    // 实际速度
 
-        /* 第4行：陀螺仪 YAW 角度，校准中显示进度 */
-        if (mpu_ok)
-        {
-            if (!mpu_calibrated)
-                OLED_Printf(0, 24, 8, "Calib:%3d%%         ", MPU_GetCalibProgress());
-            else
-                OLED_Printf(0, 24, 8, "YAW:%+07.1f        ", mpu_corrected_yaw);
-        }
+        /* 第4行：串口1最后收到的按键值 */
+        if (Serial_LastKey == 0)
+            OLED_Printf(0, 24, 8, "U1: --               ");
         else
-            OLED_Printf(0, 24, 8, "MPU6050 FAIL!       ");
+            OLED_Printf(0, 24, 8, "U1: KEY=%d           ", Serial_LastKey);
 
-        /* 第5行：行走距离 + 速度 */
-        OLED_Printf(0, 32, 8, "D:%05.0fmm  S:%.2f", Motor_GetDistance(), car_speed);
+        /* 第5行：新加蓝牙参数 */
+        OLED_Printf(0, 32, 8, "SST:%-3d TSlo:%.2f ", SoftStartTime, TurnSlowRatio);
 
         OLED_Printf(0, 40, 8, "Kp:%d Ki:%d Kd:%d",
             (int)Motor_Kp, (int)Motor_Ki, (int)Motor_Kd);// 速度环PID参数
         OLED_Printf(0, 48, 8, "TKp:%-5.1f TKd:%-5.1f",
             Track_Kp, Track_Kd);// 转向环PID参数
-        OLED_Printf(0, 56, 8, "BSp:%-4d TP:%-3d DT:%-3d",
-            BaseSpeed, TurnPower, TurnDecelTime);// 基础速度+转向功率+减速时间
+        OLED_Printf(0, 56, 8, "BSp:%-2d TP:%-2d WSc:%.1f",
+            BaseSpeed, TurnPower, Gray_WeightScale);// 基础速度+转向功率+权重倍率
         OLED_Refresh();
+    }
 
         //     /*蓝牙发送左右电机目标速度和实际速度（四参数）*/
         // BlueSerial_Printf("[plot,%d,%d,%d,%d]",

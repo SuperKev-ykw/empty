@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    Motor.c
  * @brief   AT8236 直流电机驱动实现
  * @details 通过硬件 PWM + GPIO 方向引脚驱动两路 AT8236 H 桥芯片。
@@ -34,6 +34,25 @@
 #define RIGHT_DIR_PORT          Motors_PORT
 #define RIGHT_DIR_PIN           Motors_BIN_PIN
 
+/* ==================== 速度控制结构体实例 ==================== */
+Motor_Speed_t motor_l_ctrl = {0};
+Motor_Speed_t motor_r_ctrl = {0};
+
+/* ==================== 速度环PID参数（内环） ==================== */
+float Motor_Kp = 130.0f;
+float Motor_Ki = 20.0f;
+float Motor_Kd = 15.0f;
+
+/* ==================== 位置环PD参数（外环循迹） ==================== */
+float Track_Kp = 1.2f;
+float Track_Kd = 0.0f;
+
+static float last_deviation = 0;
+
+/* ==================== 距离计算参数 ==================== */
+const float Motor_Distance_Per_Pulse = 3.14159265f * 68.0f / (28.0f * 26.0f);
+static float g_total_distance_mm = 0.0f;
+
 /* ==================== Motor_Init ==================== */
 
 void Motor_Init(void)
@@ -53,6 +72,10 @@ void Motor_SetPWM(uint8_t n, int16_t PWM)
     /* 限幅保护 */
     if (pwm_val > MOTOR_PWM_MAX)  pwm_val = MOTOR_PWM_MAX;
     if (pwm_val < MOTOR_PWM_MIN)  pwm_val = MOTOR_PWM_MIN;
+
+    /* 死区处理：慢衰减(前进)低速段电流不连续导致震荡，低于阈值直接停。
+     * 快衰减(后退)电流连续响应线性，不加死区。 */
+    if (pwm_val > 0 && pwm_val < MOTOR_PWM_DEAD)  pwm_val = 0;
 
     /* 左右驱动接口互换后，重映射电机编号 */
     if (n == MOTOR_LEFT)
@@ -171,28 +194,7 @@ void Motor_StopAll(uint8_t mode)
     Motor_Stop(MOTOR_RIGHT, mode);
 }
 
-/* ===================== 双环PID循迹：速度环控制 ===================== */
-
-Motor_Speed_t motor_l_ctrl = {0};
-Motor_Speed_t motor_r_ctrl = {0};
-
-/**
- * @name   速度环PID参数（内环）
- * @brief  控制电机实际速度跟踪目标速度（PWM范围0~8000）
- * @note   PWM范围(0~8000)是参考STM32(0~1000)的8倍，参数已对应缩放8倍
- */
-float Motor_Kp = 130.0f;
-float Motor_Ki = 20.0f;
-float Motor_Kd = 15.0f;
-
-/**
- * @name   位置环PD参数（外环）
- * @brief  根据灰度偏差计算差速目标
- */
-float Track_Kp = 1.0f;
-float Track_Kd = 0.0f;
-
-static float last_deviation = 0;
+/* ===================== 速度控制函数 ===================== */
 
 void Motor_Speed_Init(void)
 {
@@ -300,20 +302,7 @@ void Racecar(float base_speed, float deviation)
     Motor_SetTargetSpeed(target_l, target_r);
 }
 
-/* ==================== 距离计算 ==================== */
-
-/*
- * 物理参数：
- *   编码器 PPR = 13（GPIO 上升沿触发，二倍频 → 26 counts/轴转一圈）
- *   减速比 = 28 : 1
- *   轮径 = 68 mm
- *
- *   每脉冲距离 = π × 68 / (28 × 26) ≈ 0.2934 mm
- */
-const float Motor_Distance_Per_Pulse = 3.14159265f * 68.0f / (28.0f * 26.0f);
-
-/** 累加总距离（mm） */
-static float g_total_distance_mm = 0.0f;
+/* ==================== 距离计算函数 ==================== */
 
 float Motor_PulseToDistance(int16_t pulse)
 {

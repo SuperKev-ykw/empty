@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    Serial.h
  * @brief   串口通信驱动头文件
  * @details 提供串口初始化和收发功能（基于 MSPM0 SysConfig 配置）
@@ -98,13 +98,19 @@ uint16_t Serial_GetRxBufCount(void);
  */
 uint8_t Serial_GetRxData(void);
 
-/* ---- ISR 帧解析调试计数 ---- */
+/* ---- ISR 调试计数 ---- */
 extern volatile uint32_t uart1_isr_count;   /* UART1 ISR 进入次数 */
 extern volatile uint32_t dbg_rx_total;      /* ISR 收到的总字节数 */
-extern volatile uint32_t dbg_frame_header;  /* 找到帧头 0x7A 的次数 */
-extern volatile uint32_t dbg_frame_full;    /* 收满 9 字节的次数 */
-extern volatile uint32_t dbg_tail_err;      /* 帧尾 0x7B 校验失败 */
-extern volatile uint32_t dbg_bcc_err;       /* BCC 校验失败 */
-extern volatile uint32_t dbg_frame_ok;      /* 解析成功次数 */
+
+/* ==================== UART1 远程按键帧解析 ==================== */
+
+/**
+ * @brief  从环形缓冲区轮询解析 0xAA KEY 0xFF 远程按键帧
+ * @return 有效键值（1~255），无完整帧时返回 0
+ */
+uint8_t Serial_GetKeyFrame(void);
+
+/** @brief 最近一次收到的有效键值（供OLED显示） */
+extern uint8_t Serial_LastKey;
 
 #endif
