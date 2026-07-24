@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Grayscale.c
  * @brief   8 路灰度传感器驱动
  * @details 实现 8 路灰度传感器的数据读取和加权偏差计算

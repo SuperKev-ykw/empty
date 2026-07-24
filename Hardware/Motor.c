@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Motor.c
  * @brief   AT8236 直流电机驱动实现
  * @details 通过硬件 PWM + GPIO 方向引脚驱动两路 AT8236 H 桥芯片。

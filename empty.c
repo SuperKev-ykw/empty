@@ -1,4 +1,4 @@
-﻿#if 1
+#if 1
 /**
  * @file    empty.c
  * @brief   MSPM0G3507 循迹小车主程序
@@ -109,38 +109,78 @@ int main(void)
 
     while (1)
     {
-        /* ========== UART1 远程按键帧解析 ========== */
+        uint32_t tick_loop = (uint32_t)Count1 * 1000 + Count0;  /* 主循环时间戳 */
+        uint32_t t_oled = 0;
+        static uint8_t rx_data = 0xFF;     /* 最新收到的数据字节 */
+        static uint16_t rx_cnt = 0;         /* 接收帧计数 */
+        static uint16_t last_frame_id = 0;  /* 上次检测到的帧序号 */
+
+        /* ========== UART1 数据帧读取（ISR 中已解析，此处只读取结果） ========== */
+        uint32_t t_serial = 0;
         {
-            uint8_t u1_key = Serial_GetKeyFrame();
-            if (u1_key != 0)
-            {
-                /* 收到新键值立即显示，不受 RunFlag 影响 */
-                OLED_Printf(0, 24, 8, "U1: KEY=%d           ", u1_key);
-                OLED_Refresh();
-            }
-            switch (u1_key)
-            {
-                case 1:
-                    /* Key1：启动循迹 */
-                    RunFlag = 1;
-                    Turn_State = TURN_IDLE;
-                    Turn_Direction = 0;
-                    Gray_SoftStart_Reset();
-                    break;
+            static uint32_t oled_last_tick = 0;
 
-                case 2:
-                    /* Key2：停止循迹 */
-                    RunFlag = 0;
-                    Motor_SetTargetSpeed(0, 0);
-                    Gray_SoftStart_Reset();
-                    Motor_Speed_PID_Reset();
-                    break;
-
-                default:
-                    /* 其他键值：仅显示，不执行动作（保留扩展接口） */
-                    break;
+            /* 检测 ISR 是否解析到新帧（Serial_FrameId 递增表示新帧到达） */
+            uint32_t t0 = (uint32_t)Count1 * 1000 + Count0;
+            if (Serial_FrameId != last_frame_id)
+            {
+                last_frame_id = Serial_FrameId;
+                /* 同一帧可能被 ISR 多次消费（1ms 一次），去重后累加 */
+                rx_data = Serial_LastKey;
+                rx_cnt++;
             }
-        }
+            t_serial = (uint32_t)Count1 * 1000 + Count0 - t0;
+
+            /* UART1 接收数据：非阻塞分包刷新（每循环只刷 2 页≈24ms，穿插处理串口） */
+            static uint8_t oled_page = 0, oled_page_total = 0;
+            if (oled_page_total > 0)
+            {
+                /* 继续上次未完成的刷新 */
+                uint8_t done = OLED_RefreshPartial(oled_page, 2);
+                oled_page += done;
+                t_oled += 24;  /* 2 页约 24ms */
+                if (oled_page >= oled_page_total)
+                {
+                    oled_page = 0;
+                    oled_page_total = 0;
+                }
+            }
+            else if (tick_loop - oled_last_tick >= 100)
+            {
+                /* 启动新一次刷新：先更新全部显存，再分包传输 */
+                oled_last_tick = tick_loop;
+
+                /* 第1行 (Y=0, 8px)：UART1 接收数据 */
+                OLED_Printf(0, 0, 8, "RX:0x%02X Cnt:%d",
+                            (rx_cnt > 0) ? (uint16_t)rx_data : 0xFF,
+                            (uint16_t)rx_cnt);
+
+                /* 第2行 (Y=8, 8px)：YAW 角度 / 校准进度 */
+                if (mpu_calibrated)
+                    OLED_Printf(0, 8, 8, "YAW:%.2f", mpu_corrected_yaw);
+                else
+                    OLED_Printf(0, 8, 8, "CAL:%d%%", (int)(mpu_stable_cnt * 100 / 50));
+
+                /* 底部数据（仅在停止时显示） */
+                if (!RunFlag && !Joystick_Active)
+                {
+                    OLED_Printf(0, 24, 8, "TgtL:%-4d TgtR:%-4d", PWML, PWMR);
+                    OLED_Printf(0, 32, 8, "ActL:%-4d ActR:%-4d",
+                        Encoder_GetSpeed(ENCODER_LEFT),
+                        Encoder_GetSpeed(ENCODER_RIGHT));
+                    OLED_Printf(0, 40, 8, "SST:%-3d TSlo:%.2f ", SoftStartTime, TurnSlowRatio);
+                    OLED_Printf(0, 48, 8, "Kp:%d Ki:%d Kd:%d",
+                        (int)Motor_Kp, (int)Motor_Ki, (int)Motor_Kd);
+                }
+
+                oled_page = 0;
+                oled_page_total = 8;  /* 整屏刷新 */
+                /* 第一包立即发出 */
+                uint8_t done = OLED_RefreshPartial(0, 2);
+                oled_page += done;
+                t_oled += 24;
+            }
+        }  /* UART1 接收显示块结束 */
 
         /* ---- 按键扫描 ---- */
         uint8_t key = Key_GetNum();
@@ -194,11 +234,15 @@ int main(void)
         }
         /* 若 RunFlag=1 且非摇杆，Gray_Track_Control() 在 Timer ISR 20ms 调度中执行 */
 
+        uint32_t t0_bt = (uint32_t)Count1 * 1000 + Count0;
         /* ---- 蓝牙调参（解析 [slider,Name,Value] 和 [joystick,...]） ---- */
         BlueSerial_Tasks();
+        uint32_t t_bt = (uint32_t)Count1 * 1000 + Count0 - t0_bt;
 
+        uint32_t t0_mpu = (uint32_t)Count1 * 1000 + Count0;
         /* ---- MPU6050 更新（自动校准 + 增量累积） ---- */
         if (mpu_ok) MPU_Update();
+        uint32_t t_mpu = (uint32_t)Count1 * 1000 + Count0 - t0_mpu;
 
         /* ---- 距离累加（总脉冲差值，不丢帧） ---- */
         {
@@ -212,40 +256,6 @@ int main(void)
 
         /* ---- 速度计算 ---- */
         Encoder_CalcSpeed();
-        float spd_l = (float)Encoder_GetSpeed(ENCODER_LEFT)  * Motor_Distance_Per_Pulse * 0.05f;
-        float spd_r = (float)Encoder_GetSpeed(ENCODER_RIGHT) * Motor_Distance_Per_Pulse * 0.05f;
-        float car_speed = (spd_l + spd_r) / 2.0f;
-
-    /* ---- 电机运动时跳过 OLED 刷新，避免刷新耗时影响控制时序 ---- */
-    if (!RunFlag && !Joystick_Active)
-    {
-        /* ---- OLED显示（8号字体，固定宽度防残留） ---- */
-        OLED_Printf(0, 0,  8, "Track:%s", RunFlag ? "ON " : "OFF");
-        if (Joystick_Active)
-            OLED_Printf(0, 0,  8, "JoyStick!  ");
-
-        OLED_Printf(0, 8, 8, "TgtL:%-4d TgtR:%-4d", PWML, PWMR);    // 目标速度
-        OLED_Printf(0, 16, 8, "ActL:%-4d ActR:%-4d",
-            Encoder_GetSpeed(ENCODER_LEFT),
-            Encoder_GetSpeed(ENCODER_RIGHT));    // 实际速度
-
-        /* 第4行：串口1最后收到的按键值 */
-        if (Serial_LastKey == 0)
-            OLED_Printf(0, 24, 8, "U1: --               ");
-        else
-            OLED_Printf(0, 24, 8, "U1: KEY=%d           ", Serial_LastKey);
-
-        /* 第5行：新加蓝牙参数 */
-        OLED_Printf(0, 32, 8, "SST:%-3d TSlo:%.2f ", SoftStartTime, TurnSlowRatio);
-
-        OLED_Printf(0, 40, 8, "Kp:%d Ki:%d Kd:%d",
-            (int)Motor_Kp, (int)Motor_Ki, (int)Motor_Kd);// 速度环PID参数
-        OLED_Printf(0, 48, 8, "TKp:%-5.1f TKd:%-5.1f",
-            Track_Kp, Track_Kd);// 转向环PID参数
-        OLED_Printf(0, 56, 8, "BSp:%-2d TP:%-2d WSc:%.1f",
-            BaseSpeed, TurnPower, Gray_WeightScale);// 基础速度+转向功率+权重倍率
-        OLED_Refresh();
-    }
 
         //     /*蓝牙发送左右电机目标速度和实际速度（四参数）*/
         // BlueSerial_Printf("[plot,%d,%d,%d,%d]",
@@ -254,19 +264,24 @@ int main(void)
         //     Encoder_GetSpeed(ENCODER_LEFT),
         //     Encoder_GetSpeed(ENCODER_RIGHT));
 
-        /* ---- 串口1发送左右电机目标速度/实际速度/整体速度 ---- */
-        {
-           Serial_Printf("%d,%d,%d,%d,%.2f\n",
-               (int16_t)motor_l_ctrl.target_speed,
-               (int16_t)motor_r_ctrl.target_speed,
-               Encoder_GetSpeed(ENCODER_LEFT),
-               Encoder_GetSpeed(ENCODER_RIGHT),
-               car_speed);
-        }  /* 串口输出结束 */
+        // /* ---- 串口1发送左右电机目标速度/实际速度/整体速度 ---- */
+        // {
+        //    Serial_Printf("%d,%d,%d,%d,%.2f\n",
+        //        (int16_t)motor_l_ctrl.target_speed,
+        //        (int16_t)motor_r_ctrl.target_speed,
+        //        Encoder_GetSpeed(ENCODER_LEFT),
+        //        Encoder_GetSpeed(ENCODER_RIGHT),
+        //        car_speed);
+        // }  /* 串口输出结束 */
 
         // /*串口1发送运行状态：  0：IDLE  1：DECEL  2：ACTIVE*/
         // Serial_Printf("Turn_State:%d\n",
         //     Turn_State);
+
+        /* 串口0发送主循环各段耗时（ms），格式: loop_ms,serial,bt,mpu,oled */
+        BlueSerial_Printf("%d,%d,%d,%d,%d\n",
+            (uint32_t)Count1 * 1000 + Count0 - tick_loop,
+            (int)t_serial, (int)t_bt, (int)t_mpu, (int)t_oled);
 
     }  /* while(1) 结束 */
 }

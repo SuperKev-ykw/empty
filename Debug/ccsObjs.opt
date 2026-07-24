@@ -25,7 +25,7 @@
 "./Test/MPU6050_Test.o"
 "./Test/Moto_Test.o"
 "./Test/OLED_LED_Test.o"
-"./Test/Serial_Test_Gimbal.o"
+"./Test/Serial_Test.o"
 "./Test/Timer_Key_Test.o"
 "./Test/Track_Test.o"
 "./system/Timer.o"

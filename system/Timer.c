@@ -1,4 +1,4 @@
-/**
+﻿﻿/**
  * @file    Timer.c
  * @brief   定时器驱动实现文件
  * @details 实现定时器中断计数功能
@@ -25,6 +25,7 @@
 #include "Motor.h"              /* Motor_Speed_PID_Update() */
 #include "Encoder.h"            /* Encoder_CalcSpeed() */
 #include "F32C.h"               /* F32C_PollFeedback() */
+#include "Serial.h"             /* Serial_GetKeyFrame() 在 ISR 中消费缓冲区 */
 
 /* 定时器计数值定义 */
 volatile uint16_t Count0 = 0;
@@ -54,6 +55,14 @@ void TIMER_0_INST_IRQHandler(void)
     {
         Key_Tick();
         MPU_Tick();             /* MPU6050 DMP 驱动计时 */
+
+        /* 每 10ms 消费 UART1 环形缓冲区，防止主循环阻塞期间积压溢出 */
+        static uint8_t serial_tick = 0;
+        if (++serial_tick >= 10)
+        {
+            serial_tick = 0;
+            Serial_GetKeyFrame();
+        }
 
         Count0++;
         if (Count0 >= 1000)

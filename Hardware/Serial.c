@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    Serial.c
  * @brief   串口通信驱动实现文件
  * @details 基于 MSPM0G3507 + SysConfig 配置的 UART 驱动
@@ -37,6 +37,7 @@
 
 #include "ti_msp_dl_config.h"
 #include "Serial.h"
+#include "BlueSerial.h"     /* 调试用：UART1 收到的原始字节转发到 UART0 */
 
 /* ==================== 环形缓冲区实现 ==================== */
 
@@ -205,6 +206,8 @@ uint8_t Serial_GetRxData(void)
 
 /** @brief 最近收到的有效键值（`Serial_GetKeyFrame` 写入，供 OLED 显示） */
 uint8_t Serial_LastKey = 0;
+/** @brief 帧接收计数（每次收到完整帧 +1，用于主循环检测新帧） */
+volatile uint16_t Serial_FrameId = 0;
 
 /**
  * @brief  从环形缓冲区轮询解析 0xAA KEY 0xFF 远程按键帧
@@ -234,9 +237,18 @@ uint8_t Serial_GetKeyFrame(void)
             {
                 st = WAIT_AA;
                 Serial_LastKey = key;
+                Serial_FrameId++;    /* 帧序号递增，主循环据此检测新帧 */
                 return key;
             }
-            st = WAIT_AA;
+            /* 帧尾错误：遇到新帧头直接复用，否则回到空闲 */
+            if (byte == 0xAA)
+            {
+                st = WAIT_KEY;     /* 当作新帧头，等数据字节 */
+            }
+            else
+            {
+                st = WAIT_AA;      /* 无关联字节，从头找帧头 */
+            }
             break;
         default:
             st = WAIT_AA;

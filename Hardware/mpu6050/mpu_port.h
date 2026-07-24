@@ -1,4 +1,4 @@
-/**
+﻿﻿/**
  * @file    mpu_port.h
  * @brief   MPU6050 DMP 移植层头文件
  * @details 为 Invensense 官方 DMP 驱动（inv_mpu.c / inv_mpu_dmp_motion_driver.c）
@@ -37,6 +37,7 @@ int DMP_Read_Data(float *pitch, float *roll, float *yaw);
 /* 应用层：自动校准 + 增量累积（供主循环调用） */
 extern uint8_t  mpu_ok;              /* MPU6050 初始化成功标志 */
 extern uint8_t  mpu_calibrated;      /* YAW 校准完成标志 */
+extern uint16_t mpu_stable_cnt;      /* 漂移稳定计数（0~50, 用于显示校准进度%） */
 extern float    mpu_pitch;           /* 最新 Pitch（度） */
 extern float    mpu_roll;            /* 最新 Roll（度） */
 extern float    mpu_corrected_yaw;   /* 校准+补偿后的 YAW（度） */

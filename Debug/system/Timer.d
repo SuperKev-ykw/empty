@@ -90,7 +90,8 @@ system/Timer.o: ../system/Timer.c \
  D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/BlueSerial.h \
  D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Motor.h \
  D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Encoder.h \
- D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/F32C.h
+ D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/F32C.h \
+ D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Serial.h
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h:
@@ -182,3 +183,4 @@ D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/BlueSerial.h:
 D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Motor.h:
 D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Encoder.h:
 D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/F32C.h:
+D:/STUDY/MSPM0G3507/Myworkspace/empty/Hardware/Serial.h:

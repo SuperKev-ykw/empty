@@ -1,4 +1,4 @@
-/**
+﻿﻿/**
  * @file    mpu_port.c
  * @brief   MPU6050 DMP 移植层实现
  * @details 实现 inv_mpu.c 所需的 I2C 读写函数，并封装 DMP_Init / DMP_Read_Data
@@ -215,7 +215,7 @@ float    mpu_corrected_yaw= 0.0f;
 static float    mpu_yaw_offset   = 0.0f;   /* YAW 零偏 */
 static float    mpu_yaw_last     = 0.0f;   /* 上一帧原始 YAW（用于校准检测） */
 static float    mpu_raw_yaw_prev = 0.0f;   /* 上一帧去零偏 YAW（用于增量） */
-static uint16_t mpu_stable_cnt   = 0;      /* 漂移稳定计数 */
+uint16_t mpu_stable_cnt   = 0;      /* 漂移稳定计数（外部可读，用于显示校准进度） */
 
 /**
  * @brief  把单帧 YAW 增量累加到 mpu_corrected_yaw（处理 ±180° 跨边界）

@@ -1,4 +1,4 @@
-/**
+﻿﻿/**
  * @file    oled.c
  * @brief   OLED 显示屏驱动实现（SSD1306 0.96 寸 128x64，硬件 I2C）
  * @details 通过 MSPM0G3507 硬件 I2C 与 OLED 通信
@@ -146,6 +146,27 @@ void OLED_Refresh(void)
 	   for(n=0;n<128;n++)
 		 OLED_WR_Byte(OLED_GRAM[n][i],OLED_DATA);
 	}
+}
+
+/**
+ * @brief 部分刷新 OLED（可非阻塞调用）
+ * @param page_start 起始页(0-7)
+ * @param num_pages 刷新页数(1-8)
+ * @return 实际刷新的页数
+ */
+uint8_t OLED_RefreshPartial(uint8_t page_start, uint8_t num_pages)
+{
+	uint8_t i, n, end = page_start + num_pages;
+	if (end > 8) end = 8;
+	for (i = page_start; i < end; i++)
+	{
+		OLED_WR_Byte(0xb0 + i, OLED_CMD);
+		OLED_WR_Byte(0x00, OLED_CMD);
+		OLED_WR_Byte(0x10, OLED_CMD);
+		for (n = 0; n < 128; n++)
+			OLED_WR_Byte(OLED_GRAM[n][i], OLED_DATA);
+	}
+	return end - page_start;
 }
 
 //清屏函数

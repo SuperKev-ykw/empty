@@ -1,4 +1,4 @@
-/**
+﻿﻿/**
  * @file    oled.h
  * @brief   OLED 显示屏驱动头文件（SSD1306 0.96 寸 128x64，硬件 I2C）
  * @details 通过 MSPM0G3507 硬件 I2C 与 OLED 通信，地址 0x3C
@@ -176,6 +176,15 @@ void OLED_DisPlay_Off(void);
  *       屏幕上的显示才会真正更新。
  */
 void OLED_Refresh(void);
+
+/**
+ * @brief 部分刷新 OLED 显存到屏幕（非阻塞分包传输）
+ * @param page_start 起始页(0-7)
+ * @param num_pages 刷新页数(1-8)
+ * @return 实际刷新的页数
+ * @note  每页约 12ms，可用于主循环分包刷新
+ */
+uint8_t OLED_RefreshPartial(uint8_t page_start, uint8_t num_pages);
 
 /**
  * @brief 清空 OLED 显存并刷新到屏幕

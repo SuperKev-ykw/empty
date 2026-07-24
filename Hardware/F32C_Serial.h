@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    F32C_Serial.h
  * @brief   F32C 电机串口帧解析（从 Serial 环形缓冲区读取）
  * @details 将原 Serial.c ISR 中的 F32C 9 字节反馈帧解析逻辑，

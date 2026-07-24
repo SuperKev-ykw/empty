@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    BlueSerial.c
  * @brief   蓝牙串口驱动实现文件（UART0）
  * @details 使用环形缓冲区接收原始字节，供主循环解析

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    MPU6050_PID.c
  * @brief   YAW 角度闭环控制实现
  * @details 提供 YAW 角度 PID 控制器，将角度误差转为差速输出，

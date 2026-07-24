@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file    F32C_Serial.c
  * @brief   F32C 电机串口帧解析实现
  * @details 从 Serial 的环形缓冲区中轮询解析 F32C 9 字节反馈帧：

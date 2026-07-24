@@ -14,7 +14,7 @@ C_SRCS += \
 ../Test/MPU6050_Test.c \
 ../Test/Moto_Test.c \
 ../Test/OLED_LED_Test.c \
-../Test/Serial_Test_Gimbal.c \
+../Test/Serial_Test.c \
 ../Test/Timer_Key_Test.c \
 ../Test/Track_Test.c 
 
@@ -27,7 +27,7 @@ C_DEPS += \
 ./Test/MPU6050_Test.d \
 ./Test/Moto_Test.d \
 ./Test/OLED_LED_Test.d \
-./Test/Serial_Test_Gimbal.d \
+./Test/Serial_Test.d \
 ./Test/Timer_Key_Test.d \
 ./Test/Track_Test.d 
 
@@ -40,7 +40,7 @@ OBJS += \
 ./Test/MPU6050_Test.o \
 ./Test/Moto_Test.o \
 ./Test/OLED_LED_Test.o \
-./Test/Serial_Test_Gimbal.o \
+./Test/Serial_Test.o \
 ./Test/Timer_Key_Test.o \
 ./Test/Track_Test.o 
 
@@ -53,7 +53,7 @@ OBJS__QUOTED += \
 "Test\MPU6050_Test.o" \
 "Test\Moto_Test.o" \
 "Test\OLED_LED_Test.o" \
-"Test\Serial_Test_Gimbal.o" \
+"Test\Serial_Test.o" \
 "Test\Timer_Key_Test.o" \
 "Test\Track_Test.o" 
 
@@ -66,7 +66,7 @@ C_DEPS__QUOTED += \
 "Test\MPU6050_Test.d" \
 "Test\Moto_Test.d" \
 "Test\OLED_LED_Test.d" \
-"Test\Serial_Test_Gimbal.d" \
+"Test\Serial_Test.d" \
 "Test\Timer_Key_Test.d" \
 "Test\Track_Test.d" 
 
@@ -79,7 +79,7 @@ C_SRCS__QUOTED += \
 "../Test/MPU6050_Test.c" \
 "../Test/Moto_Test.c" \
 "../Test/OLED_LED_Test.c" \
-"../Test/Serial_Test_Gimbal.c" \
+"../Test/Serial_Test.c" \
 "../Test/Timer_Key_Test.c" \
 "../Test/Track_Test.c" 
 

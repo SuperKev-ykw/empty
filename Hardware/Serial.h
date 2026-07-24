@@ -1,4 +1,4 @@
-﻿/**
+﻿﻿/**
  * @file    Serial.h
  * @brief   串口通信驱动头文件
  * @details 提供串口初始化和收发功能（基于 MSPM0 SysConfig 配置）
@@ -112,5 +112,6 @@ uint8_t Serial_GetKeyFrame(void);
 
 /** @brief 最近一次收到的有效键值（供OLED显示） */
 extern uint8_t Serial_LastKey;
+extern volatile uint16_t Serial_FrameId;  /* 每收到一帧 +1 */
 
 #endif
